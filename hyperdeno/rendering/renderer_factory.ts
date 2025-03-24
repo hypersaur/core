@@ -7,13 +7,19 @@ import { Collection } from '../core/collection.ts';
 /**
  * Factory class for managing renderers and handling content negotiation
  */
+export interface RendererFactoryOptions {
+  skipDefaultRenderers?: boolean;
+}
+
 export class RendererFactory {
   private renderers: Renderer[] = [];
 
-  constructor() {
-    // Register default renderers
-    this.registerRenderer(new HalRenderer());
-    this.registerRenderer(new HtmlRenderer());
+  constructor(options: RendererFactoryOptions = {}) {
+    // Register default renderers unless skipped
+    if (!options.skipDefaultRenderers) {
+      this.registerRenderer(new HalRenderer());
+      this.registerRenderer(new HtmlRenderer());
+    }
   }
 
   /**
@@ -59,9 +65,10 @@ export class RendererFactory {
       }
     }
     
-    // Fall back to default renderer if available
-    if (this.renderers.length > 0) {
-      return this.renderers[0];
+    // Fall back to HAL renderer if available
+    const halRenderer = this.renderers.find(r => r instanceof HalRenderer);
+    if (halRenderer) {
+      return halRenderer;
     }
     
     throw new Error('No renderer found for media type: ' + accept);

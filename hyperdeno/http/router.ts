@@ -22,9 +22,8 @@
  * ```
  */
 
-import { parsePath } from './request.ts';
-import { createResponse } from './response.ts';
-import { createErrorResponse, NotFoundError, ApiError } from '../core/errors.ts';
+import { NotFoundError } from "../core/errors.ts";
+import { createErrorResponse } from "./response.ts";
 
 /**
  * HTTP methods supported by the router
@@ -102,22 +101,12 @@ export class Router {
   constructor() {
     // Set default not found handler
     this.#notFoundHandler = (req) => {
-      return new Response(JSON.stringify({
-        error: `Route not found: ${req.method} ${req.url}`
-      }), {
-        status: 404,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse(new NotFoundError(`Route not found: ${req.method} ${req.url}`));
     };
     
     // Set default error handler
     this.#errorHandler = (err) => {
-      return new Response(JSON.stringify({
-        error: err.message
-      }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return createErrorResponse(err);
     };
   }
   

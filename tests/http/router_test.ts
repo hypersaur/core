@@ -139,7 +139,7 @@ Deno.test("Router Creation and Management", async (t) => {
     let json = await response.json();
     assertEquals(response.status, 200);
     assertEquals(json.type, "articles");
-    assertEquals(json.items.length, 2);
+    assertEquals(json.embedded.items.length, 2);
 
     // Test get
     request = new Request("http://localhost:8000/articles/1");
@@ -180,7 +180,9 @@ Deno.test("Router Creation and Management", async (t) => {
     const json = await response.json();
 
     assertEquals(response.status, 404);
-    assertEquals(json.error, "Route not found: GET http://localhost:8000/not-found");
+    assertEquals(json.status, 404);
+    assertEquals(json.code, "NOT_FOUND");
+    assertEquals(json.message, "Route not found: GET http://localhost:8000/not-found");
   });
 
   await t.step("should handle custom not found handler", async () => {
@@ -208,7 +210,9 @@ Deno.test("Router Creation and Management", async (t) => {
     const json = await response.json();
 
     assertEquals(response.status, 500);
-    assertEquals(json.error, "Test Error");
+    assertEquals(json.status, 500);
+    assertEquals(json.code, "INTERNAL_ERROR");
+    assertEquals(json.message, "Test Error");
   });
 
   await t.step("should handle custom error handler", async () => {

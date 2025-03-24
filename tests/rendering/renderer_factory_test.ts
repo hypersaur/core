@@ -35,9 +35,7 @@ class TestRenderer extends Renderer {
 
 Deno.test("RendererFactory Creation and Initialization", async (t) => {
   await t.step("should create an empty factory", () => {
-    const factory = new RendererFactory();
-    const renderer = factory.getRenderer("application/hal+json");
-    assertEquals(renderer instanceof HalRenderer, true);
+    const factory = new RendererFactory({ skipDefaultRenderers: true });
     assertThrows(() => factory.getRenderer("application/unknown"));
   });
 
@@ -79,7 +77,7 @@ Deno.test("RendererFactory Creation and Initialization", async (t) => {
     
     const json = await response.json();
     assertEquals(json.type, "test");
-    assertEquals(json.title, "Test Resource");
+    assertEquals(json.properties.title, "Test Resource");
   });
 
   await t.step("should render collection", async () => {

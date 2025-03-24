@@ -6,10 +6,9 @@
  */
 
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
-import { createApp, Resource, Collection } from './index.ts';
 import { Router } from './http/router.ts';
 import { RendererFactory } from './rendering/renderer_factory.ts';
-import { createResponse } from './http/response.ts';
+import { createResponse, createErrorResponse } from './http/response.ts';
 import { ApiError } from './core/errors.ts';
 
 export interface ServerOptions {
@@ -42,27 +41,30 @@ export class Server {
    */
   async start(): Promise<void> {
     const handler = async (request: Request): Promise<Response> => {
-      try {
-        const response = await this.router.handle(request);
-        return response;
-      } catch (error) {
-        if (error instanceof ApiError) {
-          return createResponse(error.toJSON(), { status: error.status });
-        }
-        return createResponse({
-          error: {
-            message: error instanceof Error ? error.message : 'Internal Server Error',
-            status: 500,
-            code: 'INTERNAL_ERROR'
-          }
-        }, { status: 500 });
-      }
+      return this.handle(request);
     };
 
     await serve(handler, {
       port: this.port,
       hostname: this.hostname
     });
+  }
+
+  /**
+   * Handle a request
+   * @param request - The request to handle
+   * @returns The response
+   */
+  async handle(request: Request): Promise<Response> {
+    try {
+      const response = await this.router.handle(request);
+      return response;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        return createErrorResponse(error);
+      }
+      return createErrorResponse(error instanceof Error ? error : new Error('Internal Server Error'));
+    }
   }
 
   /**

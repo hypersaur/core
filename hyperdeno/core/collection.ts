@@ -325,8 +325,10 @@ export class Collection extends Resource {
   override toJSON(): Record<string, unknown> {
     const json = super.toJSON();
     
-    // Add items
-    json[this.#collectionName] = this.#items.map(item => item.toJSON());
+    // Add items in embedded field
+    json.embedded = {
+      [this.#collectionName]: this.#items.map(item => item.toJSON())
+    };
     
     // Add pagination info if set
     if (this.#pagination) {

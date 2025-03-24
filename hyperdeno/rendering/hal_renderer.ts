@@ -7,6 +7,7 @@ interface HalData {
   type: string;
   links: Record<string, Link | Link[]>;
   embedded?: Record<string, unknown>;
+  properties: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -25,7 +26,7 @@ export class HalRenderer extends Renderer {
   }
 
   override render(resource: Resource | Collection): Response {
-    const data = resource instanceof Resource ? this.renderResource(resource) : this.renderCollection(resource);
+    const data = resource instanceof Collection ? this.renderCollection(resource) : this.renderResource(resource);
     return new Response(JSON.stringify(data), {
       headers: { 'Content-Type': this.getMediaType() }
     });
@@ -35,7 +36,7 @@ export class HalRenderer extends Renderer {
     const data: HalData = {
       type: resource.getType(),
       links: resource.getLinks(),
-      ...resource.getProperties()
+      properties: resource.getProperties()
     };
 
     const embedded = resource.getEmbedded();
@@ -55,23 +56,23 @@ export class HalRenderer extends Renderer {
     return {
       type: collection.getType(),
       links: collection.getLinks(),
+      properties: collection.getProperties(),
       embedded: {
         items: collection.getItems().map(item => this.renderResource(item))
-      },
-      ...collection.getProperties()
+      }
     };
   }
 
   private toHalJson(resource: Resource | Collection): Record<string, unknown> {
     const halJson: Record<string, unknown> = {
       ...resource.getProperties(),
-      _links: this.formatLinks(resource.getLinks()),
+      links: this.formatLinks(resource.getLinks()),
     };
 
     // Add embedded resources if any
     const embedded = resource.getEmbedded();
     if (embedded && Object.keys(embedded).length > 0) {
-      halJson._embedded = this.formatEmbedded(embedded as Record<string, Resource[]>);
+      halJson.embedded = this.formatEmbedded(embedded as Record<string, Resource[]>);
     }
 
     return halJson;
@@ -109,9 +110,9 @@ export class HalRenderer extends Renderer {
     
     for (const [rel, resources] of Object.entries(embedded)) {
       if (resources.length === 1) {
-        formattedEmbedded[rel] = this.toHalJson(resources[0]);
+        formattedEmbedded[rel] = this.renderResource(resources[0]);
       } else {
-        formattedEmbedded[rel] = resources.map(resource => this.toHalJson(resource));
+        formattedEmbedded[rel] = resources.map(resource => this.renderResource(resource));
       }
     }
 

@@ -58,7 +58,7 @@ Deno.test("Server Creation and Management", async (t) => {
     const json = await response.json();
     assertEquals(response.status, 200);
     assertEquals(json.type, "article");
-    assertEquals(json.title, "Test Article");
+    assertEquals(json.properties.title, "Test Article");
   });
 
   await t.step("should handle collection routing", async () => {
@@ -91,9 +91,10 @@ Deno.test("Server Creation and Management", async (t) => {
     });
     
     const request = new Request("http://localhost:8000/error");
-    const response = await router.handle(request);
+    const response = await server.handle(request);
     const json = await response.json();
     assertEquals(response.status, 500);
+    assertEquals(json.status, 500);
     assertEquals(json.code, "INTERNAL_ERROR");
     assertEquals(json.message, "Test Error");
   });
