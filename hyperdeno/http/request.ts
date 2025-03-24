@@ -4,16 +4,58 @@
  * Provides helper functions for working with web standard Request objects.
  */
 
-import { ValidationError } from '../core/errors.js';
+import { ValidationError } from '../core/errors.ts';
+
+/**
+ * Path parameters interface
+ */
+export interface PathParams {
+  [key: string]: string;
+}
+
+/**
+ * Query parameters interface
+ */
+export interface QueryParams {
+  [key: string]: string;
+}
+
+/**
+ * Form data interface
+ */
+export interface FormData {
+  [key: string]: string | File;
+}
+
+/**
+ * Validation rule interface
+ */
+export interface ValidationRule {
+  required?: boolean;
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  validate?: (value: unknown) => boolean | string;
+}
+
+/**
+ * Validation schema interface
+ */
+export interface ValidationSchema {
+  [key: string]: ValidationRule;
+}
 
 /**
  * Parse URL path parameters
- * @param {string} pattern - URL pattern with parameter placeholders
- * @param {string} path - Actual URL path
- * @returns {Object} Path parameters
+ * @param pattern - URL pattern with parameter placeholders
+ * @param path - Actual URL path
+ * @returns Path parameters
  */
-function parsePath(pattern, path) {
-  const params = {};
+export function parsePath(pattern: string, path: string): PathParams {
+  const params: PathParams = {};
   
   // Convert pattern to regex
   const patternParts = pattern.split('/')
@@ -46,12 +88,12 @@ function parsePath(pattern, path) {
 
 /**
  * Parse query parameters from a request URL
- * @param {Request} request - Web standard Request object
- * @returns {Object} Query parameters
+ * @param request - Web standard Request object
+ * @returns Query parameters
  */
-function parseQuery(request) {
+export function parseQuery(request: Request): QueryParams {
   const url = new URL(request.url);
-  const query = {};
+  const query: QueryParams = {};
   
   for (const [key, value] of url.searchParams.entries()) {
     query[key] = value;
@@ -62,28 +104,28 @@ function parseQuery(request) {
 
 /**
  * Parse JSON request body
- * @param {Request} request - Web standard Request object
- * @returns {Promise<Object>} Parsed JSON body
+ * @param request - Web standard Request object
+ * @returns Parsed JSON body
  * @throws {ValidationError} If JSON is invalid
  */
-async function parseJSON(request) {
+export async function parseJSON(request: Request): Promise<unknown> {
   try {
     return await request.json();
   } catch (err) {
     throw new ValidationError('Invalid JSON in request body', 'INVALID_JSON', {
-      message: err.message
+      message: err instanceof Error ? err.message : 'Unknown error'
     });
   }
 }
 
 /**
  * Parse form data from request body
- * @param {Request} request - Web standard Request object
- * @returns {Promise<Object>} Parsed form data
+ * @param request - Web standard Request object
+ * @returns Parsed form data
  */
-async function parseFormData(request) {
+export async function parseFormData(request: Request): Promise<FormData> {
   const formData = await request.formData();
-  const data = {};
+  const data: FormData = {};
   
   for (const [key, value] of formData.entries()) {
     data[key] = value;
@@ -94,11 +136,11 @@ async function parseFormData(request) {
 
 /**
  * Parse request body based on content type
- * @param {Request} request - Web standard Request object
- * @returns {Promise<Object>} Parsed body
+ * @param request - Web standard Request object
+ * @returns Parsed body
  * @throws {ValidationError} If content type is unsupported
  */
-async function parseBody(request) {
+export async function parseBody(request: Request): Promise<unknown | null> {
   // Check if the request has a body
   if (['GET', 'HEAD'].includes(request.method)) {
     return null;
@@ -124,13 +166,13 @@ async function parseBody(request) {
 
 /**
  * Validate request data against a schema
- * @param {Object} data - Data to validate
- * @param {Object} schema - Validation schema
- * @returns {Object} Validated data
+ * @param data - Data to validate
+ * @param schema - Validation schema
+ * @returns Validated data
  * @throws {ValidationError} If validation fails
  */
-function validateRequest(data, schema) {
-  const errors = {};
+export function validateRequest<T extends Record<string, unknown>>(data: T, schema: ValidationSchema): T {
+  const errors: Record<string, string> = {};
   let hasErrors = false;
   
   // Simple validation against schema
@@ -199,18 +241,20 @@ function validateRequest(data, schema) {
     
     // Check min/max length for strings
     if (rule.type === 'string' || typeof value === 'string') {
-      if (rule.minLength !== undefined && value.length < rule.minLength) {
+      const strValue = String(value);
+      
+      if (rule.minLength !== undefined && strValue.length < rule.minLength) {
         errors[key] = `${key} must be at least ${rule.minLength} characters`;
         hasErrors = true;
       }
       
-      if (rule.maxLength !== undefined && value.length > rule.maxLength) {
+      if (rule.maxLength !== undefined && strValue.length > rule.maxLength) {
         errors[key] = `${key} must be at most ${rule.maxLength} characters`;
         hasErrors = true;
       }
       
       // Check pattern
-      if (rule.pattern && !new RegExp(rule.pattern).test(value)) {
+      if (rule.pattern && !new RegExp(rule.pattern).test(strValue)) {
         errors[key] = `${key} has an invalid format`;
         hasErrors = true;
       }
@@ -233,13 +277,4 @@ function validateRequest(data, schema) {
   }
   
   return data;
-}
-
-export {
-  parsePath,
-  parseQuery,
-  parseJSON,
-  parseFormData,
-  parseBody,
-  validateRequest
-};
+} 

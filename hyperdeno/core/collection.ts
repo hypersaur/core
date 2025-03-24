@@ -5,34 +5,41 @@
  * Extends Resource to inherit link management and other basic functionality.
  */
 
-import { Resource } from './resource.js';
-import { InvalidArgumentError } from './errors.js';
+import { Resource } from './resource.ts';
+import { InvalidArgumentError } from './errors.ts';
 
 /**
- * @typedef {Object} PaginationInfo
- * @property {number} page - Current page number (1-based)
- * @property {number} pageSize - Number of items per page
- * @property {number} total - Total number of items across all pages
+ * Pagination information interface
  */
+export interface PaginationInfo {
+  page: number;
+  pageSize: number;
+  total: number;
+}
 
 /**
- * @typedef {Object} CollectionOptions
- * @property {string} [type] - Collection type
- * @property {string} [id] - Collection ID
- * @property {Object} [properties] - Collection properties
- * @property {Resource[]} [items] - Initial items
+ * Collection options interface
  */
+export interface CollectionOptions {
+  type?: string;
+  id?: string;
+  properties?: Record<string, unknown>;
+  items?: Resource[];
+}
 
-class Collection extends Resource {
-  #items = [];
-  #pagination = null;
+/**
+ * Collection class for managing groups of resources
+ */
+export class Collection extends Resource {
+  #items: Resource[] = [];
+  #pagination: PaginationInfo | null = null;
   #collectionName = 'items';
   
   /**
    * Create a new collection
-   * @param {CollectionOptions} [options] - Collection options
+   * @param options - Collection options
    */
-  constructor(options = {}) {
+  constructor(options: CollectionOptions = {}) {
     super({
       type: options.type || 'collection',
       id: options.id,
@@ -46,10 +53,10 @@ class Collection extends Resource {
   
   /**
    * Set the name used for the embedded collection
-   * @param {string} name - Collection name
-   * @returns {Collection} For chaining
+   * @param name - Collection name
+   * @returns For chaining
    */
-  setCollectionName(name) {
+  setCollectionName(name: string): Collection {
     if (typeof name !== 'string' || !name) {
       throw new InvalidArgumentError('Collection name must be a non-empty string');
     }
@@ -60,18 +67,18 @@ class Collection extends Resource {
   
   /**
    * Get the collection name
-   * @returns {string} Collection name
+   * @returns Collection name
    */
-  getCollectionName() {
+  getCollectionName(): string {
     return this.#collectionName;
   }
   
   /**
    * Add an item to the collection
-   * @param {Resource} item - Resource to add
-   * @returns {Collection} For chaining
+   * @param item - Resource to add
+   * @returns For chaining
    */
-  addItem(item) {
+  addItem(item: Resource): Collection {
     if (!(item instanceof Resource)) {
       throw new InvalidArgumentError('Item must be a Resource instance');
     }
@@ -82,10 +89,10 @@ class Collection extends Resource {
   
   /**
    * Add multiple items to the collection
-   * @param {Resource[]} items - Resources to add
-   * @returns {Collection} For chaining
+   * @param items - Resources to add
+   * @returns For chaining
    */
-  addItems(items) {
+  addItems(items: Resource[]): Collection {
     if (!Array.isArray(items)) {
       throw new InvalidArgumentError('Items must be an array');
     }
@@ -102,26 +109,26 @@ class Collection extends Resource {
   
   /**
    * Get all items in the collection
-   * @returns {Resource[]} Collection items
+   * @returns Collection items
    */
-  getItems() {
+  getItems(): Resource[] {
     return [...this.#items];
   }
   
   /**
    * Get the number of items in the collection
-   * @returns {number} Item count
+   * @returns Item count
    */
-  getCount() {
+  getCount(): number {
     return this.#items.length;
   }
   
   /**
    * Set pagination information
-   * @param {PaginationInfo} pagination - Pagination info
-   * @returns {Collection} For chaining
+   * @param pagination - Pagination info
+   * @returns For chaining
    */
-  setPagination(pagination) {
+  setPagination(pagination: PaginationInfo): Collection {
     if (typeof pagination !== 'object' || pagination === null) {
       throw new InvalidArgumentError('Pagination must be an object');
     }
@@ -144,10 +151,10 @@ class Collection extends Resource {
   
   /**
    * Set the current page number
-   * @param {number} page - Page number (1-based)
-   * @returns {Collection} For chaining
+   * @param page - Page number (1-based)
+   * @returns For chaining
    */
-  setPage(page) {
+  setPage(page: number): Collection {
     if (typeof page !== 'number' || page < 1) {
       throw new InvalidArgumentError('Page must be a positive number');
     }
@@ -163,10 +170,10 @@ class Collection extends Resource {
   
   /**
    * Set the page size
-   * @param {number} pageSize - Items per page
-   * @returns {Collection} For chaining
+   * @param pageSize - Items per page
+   * @returns For chaining
    */
-  setPageSize(pageSize) {
+  setPageSize(pageSize: number): Collection {
     if (typeof pageSize !== 'number' || pageSize < 1) {
       throw new InvalidArgumentError('Page size must be a positive number');
     }
@@ -182,10 +189,10 @@ class Collection extends Resource {
   
   /**
    * Set the total number of items across all pages
-   * @param {number} total - Total item count
-   * @returns {Collection} For chaining
+   * @param total - Total item count
+   * @returns For chaining
    */
-  setTotal(total) {
+  setTotal(total: number): Collection {
     if (typeof total !== 'number' || total < 0) {
       throw new InvalidArgumentError('Total must be a non-negative number');
     }
@@ -201,17 +208,17 @@ class Collection extends Resource {
   
   /**
    * Get pagination information
-   * @returns {PaginationInfo|null} Pagination info or null if not set
+   * @returns Pagination info or null if not set
    */
-  getPagination() {
+  getPagination(): PaginationInfo | null {
     return this.#pagination ? { ...this.#pagination } : null;
   }
   
   /**
    * Calculate the total number of pages based on pagination
-   * @returns {number} Total pages or 0 if pagination not set
+   * @returns Total pages or 0 if pagination not set
    */
-  getTotalPages() {
+  getTotalPages(): number {
     if (!this.#pagination) return 0;
     
     const { total, pageSize } = this.#pagination;
@@ -222,10 +229,10 @@ class Collection extends Resource {
   
   /**
    * Add pagination links to the collection
-   * @param {string} baseUrl - Base URL for pagination links
-   * @returns {Collection} For chaining
+   * @param baseUrl - Base URL for pagination links
+   * @returns For chaining
    */
-  addPaginationLinks(baseUrl) {
+  addPaginationLinks(baseUrl: string): Collection {
     if (!this.#pagination) {
       return this;
     }
@@ -249,12 +256,12 @@ class Collection extends Resource {
       this.addLink('last', `${baseUrl}?page=${totalPages}&pageSize=${pageSize}`);
     }
     
-    // Previous page
+    // Previous page (if not on first page)
     if (page > 1) {
       this.addLink('prev', `${baseUrl}?page=${page - 1}&pageSize=${pageSize}`);
     }
     
-    // Next page
+    // Next page (if not on last page)
     if (page < totalPages) {
       this.addLink('next', `${baseUrl}?page=${page + 1}&pageSize=${pageSize}`);
     }
@@ -264,13 +271,13 @@ class Collection extends Resource {
   
   /**
    * Create a paginated collection
-   * @param {Resource[]} items - Items for the current page
-   * @param {number} page - Current page number (1-based)
-   * @param {number} pageSize - Items per page
-   * @param {number} total - Total items across all pages
-   * @returns {Collection} A new Collection with pagination
+   * @param items - Collection items
+   * @param page - Current page
+   * @param pageSize - Items per page
+   * @param total - Total items
+   * @returns New collection instance
    */
-  static paginated(items, page, pageSize, total) {
+  static paginated(items: Resource[], page: number, pageSize: number, total: number): Collection {
     return new Collection()
       .addItems(items)
       .setPage(page)
@@ -280,28 +287,19 @@ class Collection extends Resource {
   
   /**
    * Convert the collection to a JSON object
-   * This is called automatically by JSON.stringify()
-   * @returns {Object} JSON representation of the collection
+   * @returns JSON representation
    */
-  toJSON() {
-    // Get the base JSON from Resource class
+  override toJSON(): Record<string, unknown> {
     const json = super.toJSON();
     
-    // Add pagination information
+    // Add items
+    json[this.#collectionName] = this.#items.map(item => item.toJSON());
+    
+    // Add pagination info if set
     if (this.#pagination) {
       json._pagination = { ...this.#pagination };
     }
     
-    // Ensure embedded items are present
-    if (!json._embedded) {
-      json._embedded = {};
-    }
-    
-    // Add items to embedded section with proper collection name
-    json._embedded[this.#collectionName] = this.#items.map(item => item.toJSON());
-    
     return json;
   }
-}
-
-export { Collection };
+} 

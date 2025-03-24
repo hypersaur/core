@@ -5,30 +5,32 @@
  * with proper content types and status codes.
  */
 
-import { Resource } from '../core/resource.js';
-import { Collection } from '../core/collection.js';
+import { Resource } from '../core/resource.ts';
+import { Collection } from '../core/collection.ts';
 
 /**
- * @typedef {Object} ResponseOptions
- * @property {number} [status=200] - HTTP status code
- * @property {Object} [headers={}] - Response headers
+ * Response options interface
  */
+export interface ResponseOptions {
+  status?: number;
+  headers?: Record<string, string>;
+}
 
 /**
  * Create a response with appropriate content type and status
- * @param {*} data - Response data
- * @param {ResponseOptions} [options] - Response options
- * @returns {Response} Web standard Response
+ * @param data - Response data
+ * @param options - Response options
+ * @returns Web standard Response
  */
-function createResponse(data, options = {}) {
+export function createResponse(data: unknown, options: ResponseOptions = {}): Response {
   // Default response options
-  const defaultOptions = {
+  const defaultOptions: ResponseOptions = {
     status: 200,
     headers: {}
   };
   
   // Merge options
-  const finalOptions = { 
+  const finalOptions: ResponseOptions = { 
     ...defaultOptions, 
     ...options,
     headers: { ...defaultOptions.headers, ...options.headers } 
@@ -62,11 +64,11 @@ function createResponse(data, options = {}) {
 
 /**
  * Create a JSON response
- * @param {Object} data - JSON data
- * @param {ResponseOptions} [options] - Response options
- * @returns {Response} Web standard Response
+ * @param data - JSON data
+ * @param options - Response options
+ * @returns Web standard Response
  */
-function createJsonResponse(data, options = {}) {
+export function createJsonResponse(data: unknown, options: ResponseOptions = {}): Response {
   const headers = {
     'Content-Type': 'application/json',
     ...options.headers
@@ -80,11 +82,11 @@ function createJsonResponse(data, options = {}) {
 
 /**
  * Create a text response
- * @param {string} text - Text content
- * @param {ResponseOptions} [options] - Response options
- * @returns {Response} Web standard Response
+ * @param text - Text content
+ * @param options - Response options
+ * @returns Web standard Response
  */
-function createTextResponse(text, options = {}) {
+export function createTextResponse(text: string, options: ResponseOptions = {}): Response {
   const headers = {
     'Content-Type': 'text/plain',
     ...options.headers
@@ -98,11 +100,11 @@ function createTextResponse(text, options = {}) {
 
 /**
  * Create an HTML response
- * @param {string} html - HTML content
- * @param {ResponseOptions} [options] - Response options
- * @returns {Response} Web standard Response
+ * @param html - HTML content
+ * @param options - Response options
+ * @returns Web standard Response
  */
-function createHtmlResponse(html, options = {}) {
+export function createHtmlResponse(html: string, options: ResponseOptions = {}): Response {
   const headers = {
     'Content-Type': 'text/html',
     ...options.headers
@@ -116,11 +118,11 @@ function createHtmlResponse(html, options = {}) {
 
 /**
  * Create a redirect response
- * @param {string} url - Redirect URL
- * @param {boolean} [permanent=false] - Whether the redirect is permanent
- * @returns {Response} Web standard Response
+ * @param url - Redirect URL
+ * @param permanent - Whether the redirect is permanent
+ * @returns Web standard Response
  */
-function createRedirectResponse(url, permanent = false) {
+export function createRedirectResponse(url: string, permanent = false): Response {
   return new Response(null, {
     status: permanent ? 301 : 302,
     headers: {
@@ -131,10 +133,10 @@ function createRedirectResponse(url, permanent = false) {
 
 /**
  * Add standard HATEOAS headers to a response
- * @param {Response} response - Web standard Response
- * @returns {Response} Enhanced response with HATEOAS headers
+ * @param response - Web standard Response
+ * @returns Enhanced response with HATEOAS headers
  */
-function addHateoasHeaders(response) {
+export function addHateoasHeaders(response: Response): Response {
   const newHeaders = new Headers(response.headers);
   
   // Add CORS headers for API accessibility
@@ -150,13 +152,4 @@ function addHateoasHeaders(response) {
     statusText: response.statusText,
     headers: newHeaders
   });
-}
-
-export {
-  createResponse,
-  createJsonResponse,
-  createTextResponse,
-  createHtmlResponse,
-  createRedirectResponse,
-  addHateoasHeaders
-};
+} 

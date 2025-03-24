@@ -5,66 +5,65 @@
  * This class follows the Single Responsibility Principle by focusing only on state management.
  */
 
-import { InvalidArgumentError, StateTransitionError } from './errors.js';
+import { InvalidArgumentError, StateTransitionError } from './errors.ts';
 
-/**
- * @typedef {Object} StateTransition
- * @property {string} from - Starting state
- * @property {string} to - Target state
- * @property {string} name - Transition name
- * @property {string} href - URI for the transition
- * @property {string} method - HTTP method for the transition
- * @property {Object} [conditions] - Conditions that must be met for the transition
- */
+export interface StateTransition {
+  from: string;
+  to: string;
+  name: string;
+  href: string;
+  method: string;
+  conditions?: Record<string, unknown>;
+}
 
 /**
  * Class responsible for managing state transitions
  */
-class ResourceState {
-  #currentState = '';
-  #transitions = [];
+export class ResourceState {
+  private currentState = '';
+  private transitions: StateTransition[] = [];
   
   /**
    * Create a new state manager
-   * @param {string} [initialState] - Optional initial state
+   * @param initialState - Optional initial state
    */
-  constructor(initialState = '') {
-    this.#currentState = initialState;
+  constructor(initialState: string = '') {
+    this.currentState = initialState;
   }
   
   /**
    * Set the current state
-   * @param {string} state - New state
-   * @returns {string} The new state
+   * @param state - New state
+   * @returns The new state
    */
-  setState(state) {
+  setState(state: string): string {
     if (typeof state !== 'string') {
       throw new InvalidArgumentError('State must be a string');
     }
     
-    this.#currentState = state;
-    return this.#currentState;
+    this.currentState = state;
+    return this.currentState;
   }
   
   /**
    * Get the current state
-   * @returns {string} The current state
+   * @returns The current state
    */
-  getState() {
-    return this.#currentState;
+  getState(): string {
+    return this.currentState;
   }
   
   /**
    * Add a state transition
-   * @param {string} from - Starting state
-   * @param {string} to - Target state
-   * @param {string} name - Transition name
-   * @param {string} href - URI for the transition
-   * @param {string} [method='POST'] - HTTP method
-   * @param {Object} [conditions] - Conditions for the transition
-   * @returns {StateTransition} The created transition
+   * @param from - Starting state
+   * @param to - Target state
+   * @param name - Transition name
+   * @param href - URI for the transition
+   * @param method - HTTP method
+   * @param conditions - Conditions for the transition
+   * @returns The created transition
    */
-  addTransition(from, to, name, href, method = 'POST', conditions = null) {
+  addTransition(from: string, to: string, name: string, href: string, method: string = 'POST', conditions?: Record<string, unknown>): StateTransition {
     if (typeof from !== 'string' || !from) {
       throw new InvalidArgumentError('"from" state must be a non-empty string');
     }
@@ -81,7 +80,7 @@ class ResourceState {
       throw new InvalidArgumentError('Transition href must be a non-empty string');
     }
     
-    const transition = {
+    const transition: StateTransition = {
       from,
       to,
       name,
@@ -90,26 +89,26 @@ class ResourceState {
       conditions
     };
     
-    this.#transitions.push(transition);
+    this.transitions.push(transition);
     return transition;
   }
   
   /**
    * Get all transitions
-   * @returns {StateTransition[]} All transitions
+   * @returns All transitions
    */
-  getTransitions() {
-    return [...this.#transitions];
+  getTransitions(): StateTransition[] {
+    return [...this.transitions];
   }
   
   /**
    * Get available transitions from a given state
-   * @param {string} state - Current state
-   * @param {Object} [properties={}] - Resource properties to check against conditions
-   * @returns {StateTransition[]} Available transitions
+   * @param state - Current state
+   * @param properties - Resource properties to check against conditions
+   * @returns Available transitions
    */
-  getAvailableTransitions(state, properties = {}) {
-    return this.#transitions.filter(transition => {
+  getAvailableTransitions(state: string, properties: Record<string, unknown> = {}): StateTransition[] {
+    return this.transitions.filter(transition => {
       // Must match current state
       if (transition.from !== state) {
         return false;
@@ -128,15 +127,15 @@ class ResourceState {
   
   /**
    * Apply a transition
-   * @param {string} currentState - Current state
-   * @param {string} transitionName - Transition name to apply
-   * @param {Object} [properties={}] - Resource properties to check against conditions
-   * @returns {string} The new state
+   * @param currentState - Current state
+   * @param transitionName - Transition name to apply
+   * @param properties - Resource properties to check against conditions
+   * @returns The new state
    * @throws {StateTransitionError} If the transition is not available
    */
-  applyTransition(currentState, transitionName, properties = {}) {
+  applyTransition(currentState: string, transitionName: string, properties: Record<string, unknown> = {}): string {
     // Find the transition
-    const transition = this.#transitions.find(
+    const transition = this.transitions.find(
       t => t.name === transitionName && t.from === currentState
     );
     
@@ -165,25 +164,23 @@ class ResourceState {
   
   /**
    * Clone the state manager
-   * @returns {ResourceState} A new state manager with the same data
+   * @returns A new state manager with the same data
    */
-  clone() {
-    const clone = new ResourceState(this.#currentState);
+  clone(): ResourceState {
+    const clone = new ResourceState(this.currentState);
     
     // Copy transitions
-    this.#transitions.forEach(transition => {
+    this.transitions.forEach(transition => {
       clone.addTransition(
         transition.from,
         transition.to,
         transition.name,
         transition.href,
         transition.method,
-        transition.conditions ? { ...transition.conditions } : null
+        transition.conditions ? { ...transition.conditions } : undefined
       );
     });
     
     return clone;
   }
-}
-
-export { ResourceState };
+} 

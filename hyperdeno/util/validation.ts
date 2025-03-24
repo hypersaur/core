@@ -4,33 +4,39 @@
  * Provides utilities for validating data against schemas.
  */
 
-import { ValidationError } from '../core/errors.js';
+import { ValidationError } from '../core/errors.ts';
+import { parseBody } from '../http/request.ts';
 
 /**
- * @typedef {Object} ValidationRule
- * @property {string} [type] - Expected type
- * @property {boolean} [required] - Whether the field is required
- * @property {number} [min] - Minimum value for numbers
- * @property {number} [max] - Maximum value for numbers
- * @property {number} [minLength] - Minimum length for strings
- * @property {number} [maxLength] - Maximum length for strings
- * @property {string} [pattern] - Regex pattern for strings
- * @property {Function} [validate] - Custom validation function
+ * Validation rule interface
  */
+export interface ValidationRule {
+  type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  required?: boolean;
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  validate?: (value: unknown) => boolean | string;
+}
 
 /**
- * @typedef {Object.<string, ValidationRule>} ValidationSchema
+ * Validation schema interface
  */
+export interface ValidationSchema {
+  [key: string]: ValidationRule;
+}
 
 /**
  * Validate data against a schema
- * @param {Object} data - Data to validate
- * @param {ValidationSchema} schema - Validation schema
- * @returns {Object} Validated data
+ * @param data - Data to validate
+ * @param schema - Validation schema
+ * @returns Validated data
  * @throws {ValidationError} If validation fails
  */
-function validate(data, schema) {
-  const errors = {};
+export function validate(data: Record<string, unknown>, schema: ValidationSchema): Record<string, unknown> {
+  const errors: Record<string, string> = {};
   let hasErrors = false;
   
   // Check for required fields and validate
@@ -59,7 +65,7 @@ function validate(data, schema) {
           break;
         case 'number':
           isValidType = typeof value === 'number' || 
-                      (typeof value === 'string' && !isNaN(parseFloat(value)));
+                      (typeof value === 'string' && !isNaN(parseFloat(value as string)));
           break;
         case 'boolean':
           isValidType = typeof value === 'boolean' || 
@@ -89,7 +95,7 @@ function validate(data, schema) {
     
     // Validate minimum/maximum for numbers
     if (rule.type === 'number') {
-      const numValue = typeof value === 'number' ? value : parseFloat(value);
+      const numValue = typeof value === 'number' ? value : parseFloat(value as string);
       
       if (rule.min !== undefined && numValue < rule.min) {
         errors[field] = `${field} must be at least ${rule.min}`;
@@ -103,7 +109,7 @@ function validate(data, schema) {
     }
     
     // Validate minimum/maximum length for strings
-    if (rule.type === 'string') {
+    if (rule.type === 'string' && typeof value === 'string') {
       if (rule.minLength !== undefined && value.length < rule.minLength) {
         errors[field] = `${field} must be at least ${rule.minLength} characters`;
         hasErrors = true;
@@ -161,22 +167,25 @@ function validate(data, schema) {
 
 /**
  * Create a validation middleware
- * @param {ValidationSchema} schema - Validation schema
- * @param {string} [source='body'] - Data source (body, query, params)
- * @returns {Function} Middleware function
+ * @param schema - Validation schema
+ * @param source - Data source (body, query, params)
+ * @returns Middleware function
  */
-function validateMiddleware(schema, source = 'body') {
-  return async (request) => {
-    let data;
+export function validateMiddleware(schema: ValidationSchema, source: 'body' | 'query' | 'params' = 'body') {
+  return async (request: Request & { params?: Record<string, string> }) => {
+    let data: Record<string, unknown>;
     
     switch (source) {
       case 'body':
-        data = await parseBody(request);
+        data = await parseBody(request) as Record<string, unknown>;
         break;
       case 'query':
         data = Object.fromEntries(new URL(request.url).searchParams);
         break;
       case 'params':
+        if (!request.params) {
+          throw new Error('Route parameters not available');
+        }
         data = request.params;
         break;
       default:
@@ -196,6 +205,4 @@ function validateMiddleware(schema, source = 'body') {
     
     return enhancedRequest;
   };
-}
-
-export { validate, validateMiddleware };
+} 

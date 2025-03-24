@@ -5,26 +5,53 @@
  * @see https://stateless.group/hal_specification.html
  */
 
-import { Renderer } from './renderer.js';
-import { MEDIA_TYPES } from '../http/content-type.js';
-import { createJsonResponse } from '../http/response.js';
+import { Renderer, RendererOptions } from './renderer.ts';
+import { MEDIA_TYPES } from '../http/content-type.ts';
+import { createJsonResponse } from '../http/response.ts';
+import { Resource } from '../core/resource.ts';
+import { Collection } from '../core/collection.ts';
 
 /**
- * HAL renderer options
- * @typedef {Object} HalRendererOptions
- * @property {boolean} [prettyPrint=false] - Whether to format the JSON with indentation
- * @property {boolean} [embedAll=true] - Whether to embed all related resources
+ * HAL link interface
  */
+interface HalLink {
+  href: string;
+  templated?: boolean;
+  title?: string;
+  name?: string;
+  hreflang?: string;
+  profile?: string;
+  method?: string;
+}
+
+/**
+ * HAL resource interface
+ */
+interface HalResource {
+  _links?: Record<string, HalLink | HalLink[]>;
+  _embedded?: Record<string, HalResource | HalResource[]>;
+  [key: string]: unknown;
+}
+
+/**
+ * HAL renderer options interface
+ */
+export interface HalRendererOptions extends RendererOptions {
+  prettyPrint?: boolean;
+  embedAll?: boolean;
+}
 
 /**
  * Renderer for HAL+JSON format
  */
-class HalRenderer extends Renderer {
+export class HalRenderer extends Renderer {
+  private options: HalRendererOptions;
+
   /**
    * Create a new HAL renderer
-   * @param {HalRendererOptions} [options] - Renderer options
+   * @param options - Renderer options
    */
-  constructor(options = {}) {
+  constructor(options: HalRendererOptions = {}) {
     super();
     this.options = {
       prettyPrint: false,
@@ -35,27 +62,27 @@ class HalRenderer extends Renderer {
   
   /**
    * Get the media type this renderer produces
-   * @returns {string} Media type
+   * @returns Media type
    */
-  getMediaType() {
+  override getMediaType(): string {
     return MEDIA_TYPES.HAL_JSON;
   }
   
   /**
    * Check if this renderer can handle the requested media type
-   * @param {string} mediaType - Requested media type
-   * @returns {boolean} Whether this renderer can handle the media type
+   * @param mediaType - Requested media type
+   * @returns Whether this renderer can handle the media type
    */
-  canHandle(mediaType) {
+  override canHandle(mediaType: string): boolean {
     return mediaType === MEDIA_TYPES.HAL_JSON;
   }
   
   /**
    * Render a resource to HAL+JSON
-   * @param {import('../core/resource.js').Resource|import('../core/collection.js').Collection} resource - Resource to render
-   * @returns {Response} Web standard Response
+   * @param resource - Resource to render
+   * @returns Web standard Response
    */
-  render(resource) {
+  override render(resource: Resource | Collection): Response {
     // Transform resource to HAL format
     const halResource = this.#transformToHal(resource);
     
@@ -65,23 +92,22 @@ class HalRenderer extends Renderer {
       { 
         headers: {
           'Content-Type': this.getMediaType()
-        },
-        space: this.options.prettyPrint ? 2 : 0
+        }
       }
     );
   }
   
   /**
    * Transform a resource to HAL format
-   * @param {Object} resource - Resource object
-   * @returns {Object} HAL-formatted resource
+   * @param resource - Resource object
+   * @returns HAL-formatted resource
    * @private
    */
-  #transformToHal(resource) {
+  #transformToHal(resource: Resource | Collection): HalResource {
     const json = resource.toJSON();
     
     // Create HAL representation
-    const hal = {};
+    const hal: HalResource = {};
     
     // Copy regular properties (excluding special HAL properties)
     for (const [key, value] of Object.entries(json)) {
@@ -96,9 +122,9 @@ class HalRenderer extends Renderer {
       
       for (const [rel, linkData] of Object.entries(json._links)) {
         if (Array.isArray(linkData)) {
-          hal._links[rel] = linkData.map(link => this.#transformLink(link));
+          hal._links[rel] = linkData.map(link => this.#transformLink(link as Record<string, unknown>));
         } else {
-          hal._links[rel] = this.#transformLink(linkData);
+          hal._links[rel] = this.#transformLink(linkData as Record<string, unknown>);
         }
       }
     }
@@ -109,9 +135,9 @@ class HalRenderer extends Renderer {
       
       for (const [rel, embeddedData] of Object.entries(json._embedded)) {
         if (Array.isArray(embeddedData)) {
-          hal._embedded[rel] = embeddedData.map(item => this.#transformToHal(item));
+          hal._embedded[rel] = embeddedData.map(item => this.#transformToHal(item as Resource | Collection));
         } else {
-          hal._embedded[rel] = this.#transformToHal(embeddedData);
+          hal._embedded[rel] = this.#transformToHal(embeddedData as Resource | Collection);
         }
       }
     }
@@ -121,14 +147,14 @@ class HalRenderer extends Renderer {
   
   /**
    * Transform a link to HAL format
-   * @param {Object} link - Link object
-   * @returns {Object} HAL-formatted link
+   * @param link - Link object
+   * @returns HAL-formatted link
    * @private
    */
-  #transformLink(link) {
+  #transformLink(link: Record<string, unknown>): HalLink {
     // HAL links only include specific properties
-    const halLink = {
-      href: link.href
+    const halLink: HalLink = {
+      href: link.href as string
     };
     
     // Add optional properties if present
@@ -137,25 +163,25 @@ class HalRenderer extends Renderer {
     }
     
     if (link.title) {
-      halLink.title = link.title;
+      halLink.title = link.title as string;
     }
     
     if (link.name) {
-      halLink.name = link.name;
+      halLink.name = link.name as string;
     }
     
     if (link.hreflang) {
-      halLink.hreflang = link.hreflang;
+      halLink.hreflang = link.hreflang as string;
     }
     
     if (link.profile) {
-      halLink.profile = link.profile;
+      halLink.profile = link.profile as string;
     }
     
     // Note: HAL doesn't officially support 'method', but we'll keep it
     // as an extension for clients that need it
     if (link.method && link.method !== 'GET') {
-      halLink.method = link.method;
+      halLink.method = link.method as string;
     }
     
     return halLink;
@@ -163,11 +189,9 @@ class HalRenderer extends Renderer {
   
   /**
    * Get renderer options
-   * @returns {HalRendererOptions} Renderer options
+   * @returns Renderer options
    */
-  getOptions() {
+  override getOptions(): HalRendererOptions {
     return { ...this.options };
   }
-}
-
-export { HalRenderer };
+} 
