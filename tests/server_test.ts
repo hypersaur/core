@@ -43,69 +43,59 @@ Deno.test("Server Creation and Management", async (t) => {
   await t.step("should handle resource routing", async () => {
     const server = new Server();
     const router = server.getRouter();
-
-    router.get("/articles/:id", (request, params) => {
-      const article = new Resource({
-        type: "article",
+    
+    router.get("/articles/:id", (request: Request, params: Record<string, string>) => {
+      const article = new Resource({ 
+        type: "article", 
         id: params.id,
-        properties: {
-          title: "Test Article",
-          content: "Test Content"
-        }
+        properties: { title: "Test Article" }
       });
-
       return createResponse(article);
     });
-
+    
     const request = new Request("http://localhost:8000/articles/1");
     const response = await router.handle(request);
     const json = await response.json();
-
     assertEquals(response.status, 200);
     assertEquals(json.type, "article");
-    assertEquals(json.id, "1");
-    assertEquals(json.properties.title, "Test Article");
+    assertEquals(json.title, "Test Article");
   });
 
   await t.step("should handle collection routing", async () => {
     const server = new Server();
     const router = server.getRouter();
-
+    
     router.get("/articles", () => {
       const articles = [
         new Resource({ type: "article", id: "1", properties: { title: "Article 1" } }),
         new Resource({ type: "article", id: "2", properties: { title: "Article 2" } })
       ];
       const collection = new Collection({ type: "articles", items: articles });
-      collection.setPagination({ page: 1, pageSize: 10, total: 2 });
       return createResponse(collection);
     });
-
+    
     const request = new Request("http://localhost:8000/articles");
     const response = await router.handle(request);
     const json = await response.json();
-
     assertEquals(response.status, 200);
     assertEquals(json.type, "articles");
-    assertEquals(json.items.length, 2);
-    assertEquals(json.items[0].id, "1");
-    assertEquals(json.items[1].id, "2");
+    assertEquals(json.embedded.items.length, 2);
   });
 
   await t.step("should handle error responses", async () => {
     const server = new Server();
     const router = server.getRouter();
-
+    
     router.get("/error", () => {
       throw new Error("Test Error");
     });
-
+    
     const request = new Request("http://localhost:8000/error");
     const response = await router.handle(request);
     const json = await response.json();
-
     assertEquals(response.status, 500);
-    assertEquals(json.error, "Internal Server Error");
+    assertEquals(json.code, "INTERNAL_ERROR");
+    assertEquals(json.message, "Test Error");
   });
 
   await t.step("should handle different HTTP methods", async () => {

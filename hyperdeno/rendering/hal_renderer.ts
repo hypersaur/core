@@ -1,16 +1,13 @@
 import { Renderer } from './renderer.ts';
 import { Resource } from '../core/resource.ts';
 import { Collection } from '../core/collection.ts';
+import { Link } from '../core/link.ts';
 
-interface LinkObject {
-  href: string;
-  templated?: boolean;
-  type?: string;
-  deprecation?: string;
-  name?: string;
-  profile?: string;
-  title?: string;
-  hreflang?: string;
+interface HalData {
+  type: string;
+  links: Record<string, Link | Link[]>;
+  embedded?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 /**
@@ -23,17 +20,46 @@ interface LinkObject {
  * - Embedded resources (_embedded)
  */
 export class HalRenderer extends Renderer {
-  getMediaType(): string {
+  override getMediaType(): string {
     return 'application/hal+json';
   }
 
-  render(resource: Resource | Collection): Response {
-    const halJson = this.toHalJson(resource);
-    return new Response(JSON.stringify(halJson), {
-      headers: {
-        'Content-Type': 'application/hal+json',
-      },
+  override render(resource: Resource | Collection): Response {
+    const data = resource instanceof Resource ? this.renderResource(resource) : this.renderCollection(resource);
+    return new Response(JSON.stringify(data), {
+      headers: { 'Content-Type': this.getMediaType() }
     });
+  }
+
+  private renderResource(resource: Resource): HalData {
+    const data: HalData = {
+      type: resource.getType(),
+      links: resource.getLinks(),
+      ...resource.getProperties()
+    };
+
+    const embedded = resource.getEmbedded();
+    if (embedded && Object.keys(embedded).length > 0) {
+      data.embedded = Object.fromEntries(
+        Object.entries(embedded).map(([rel, resources]) => [
+          rel,
+          resources.map((r: Resource) => this.renderResource(r))
+        ])
+      );
+    }
+
+    return data;
+  }
+
+  private renderCollection(collection: Collection): HalData {
+    return {
+      type: collection.getType(),
+      links: collection.getLinks(),
+      embedded: {
+        items: collection.getItems().map(item => this.renderResource(item))
+      },
+      ...collection.getProperties()
+    };
   }
 
   private toHalJson(resource: Resource | Collection): Record<string, unknown> {
@@ -56,25 +82,24 @@ export class HalRenderer extends Renderer {
     
     for (const [rel, link] of Object.entries(links)) {
       if (Array.isArray(link)) {
-        formattedLinks[rel] = link.map(l => this.formatLinkObject(l as LinkObject));
+        formattedLinks[rel] = link.map(l => this.formatLinkObject(l as Link));
       } else {
-        formattedLinks[rel] = this.formatLinkObject(link as LinkObject);
+        formattedLinks[rel] = this.formatLinkObject(link as Link);
       }
     }
 
     return formattedLinks;
   }
 
-  private formatLinkObject(link: LinkObject): Record<string, unknown> {
+  private formatLinkObject(link: Link): Record<string, unknown> {
     const result: Record<string, unknown> = { href: link.href };
     
-    if (link.templated) result.templated = true;
-    if (link.type) result.type = link.type;
-    if (link.deprecation) result.deprecation = link.deprecation;
-    if (link.name) result.name = link.name;
-    if (link.profile) result.profile = link.profile;
+    if (link.method) result.method = link.method;
+    if (link.templated) result.templated = link.templated;
     if (link.title) result.title = link.title;
+    if (link.type) result.type = link.type;
     if (link.hreflang) result.hreflang = link.hreflang;
+    if (link.attrs) result.attrs = link.attrs;
     
     return result;
   }

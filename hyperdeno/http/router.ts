@@ -102,13 +102,22 @@ export class Router {
   constructor() {
     // Set default not found handler
     this.#notFoundHandler = (req) => {
-      const error = new NotFoundError(`Route not found: ${req.method} ${req.url}`);
-      return createErrorResponse(error);
+      return new Response(JSON.stringify({
+        error: `Route not found: ${req.method} ${req.url}`
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
     };
     
     // Set default error handler
     this.#errorHandler = (err) => {
-      return createErrorResponse(err);
+      return new Response(JSON.stringify({
+        error: err.message
+      }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      });
     };
   }
   
@@ -120,10 +129,13 @@ export class Router {
    */
   #pathToRegex(path: string): RegExp {
     const pattern = path
-      .replace(/:[^/]+/g, '([^/]+)')
-      .replace(/\*/g, '.*');
-    
-    return new RegExp(`^${pattern}$`);
+      .replace(/\/$/, '')  // Remove trailing slash
+      .replace(/:[a-zA-Z]+/g, match => {
+        const paramName = match.slice(1);
+        return `(?<${paramName}>[^/]+)`;
+      })
+      .replace(/\*/g, '.*'); // Convert * to wildcard
+    return new RegExp(`^${pattern}/?$`);
   }
   
   /**
@@ -135,22 +147,10 @@ export class Router {
    */
   #extractParams(pattern: RegExp, path: string): Record<string, string> {
     const match = path.match(pattern);
-    if (!match) {
+    if (!match?.groups) {
       return {};
     }
-    
-    const params: Record<string, string> = {};
-    const paramNames = pattern.toString()
-      .match(/\([^)]+\)/g)
-      ?.map(name => name.slice(1, -1)) || [];
-    
-    match.slice(1).forEach((value, index) => {
-      if (paramNames[index]) {
-        params[paramNames[index]] = value;
-      }
-    });
-    
-    return params;
+    return match.groups;
   }
   
   /**
@@ -349,17 +349,19 @@ export class Router {
       );
       
       if (!route) {
+        const error = new NotFoundError(`Route not found: ${request.method} ${request.url}`);
         return this.#notFoundHandler!(request, {});
       }
       
       // Extract parameters and call handler
       const params = this.#extractParams(route.path, path);
-      return await route.handler(request, params);
+      const response = await route.handler(request, params);
+      return response;
     } catch (error) {
-      if (this.#errorHandler) {
-        return this.#errorHandler(error instanceof Error ? error : new Error(String(error)));
+      if (error instanceof Error) {
+        return this.#errorHandler!(error);
       }
-      throw error;
+      return this.#errorHandler!(new Error(String(error)));
     }
   }
 } 

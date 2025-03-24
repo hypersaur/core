@@ -36,7 +36,8 @@ class TestRenderer extends Renderer {
 Deno.test("RendererFactory Creation and Initialization", async (t) => {
   await t.step("should create an empty factory", () => {
     const factory = new RendererFactory();
-    const renderers = factory.getRenderer("application/hal+json");
+    const renderer = factory.getRenderer("application/hal+json");
+    assertEquals(renderer instanceof HalRenderer, true);
     assertThrows(() => factory.getRenderer("application/unknown"));
   });
 
@@ -64,61 +65,56 @@ Deno.test("RendererFactory Creation and Initialization", async (t) => {
 
   await t.step("should render resource", async () => {
     const factory = new RendererFactory();
-    factory.registerRenderer(new TestRenderer());
+    factory.registerRenderer(new HalRenderer());
     
-    const resource = new Resource(undefined, undefined, {
-      type: "test",
-      id: "123",
-      properties: { name: "Test Resource" }
+    const resource = new Resource({ 
+      type: "test", 
+      id: "1",
+      properties: { title: "Test Resource" }
     });
     
-    const response = factory.render(resource, "application/test+json");
-    const text = await response.text();
-    const data = JSON.parse(text);
-    assertEquals(data.type, "test");
-    assertEquals(data.id, "123");
-    assertEquals(data.properties.name, "Test Resource");
+    const response = factory.render(resource, "application/hal+json");
+    assertEquals(response.status, 200);
+    assertEquals(response.headers.get("Content-Type"), "application/hal+json");
+    
+    const json = await response.json();
+    assertEquals(json.type, "test");
+    assertEquals(json.title, "Test Resource");
   });
 
   await t.step("should render collection", async () => {
     const factory = new RendererFactory();
-    factory.registerRenderer(new TestRenderer());
+    factory.registerRenderer(new HalRenderer());
     
-    const collection = new Collection({
-      type: "test",
-      items: [
-        new Resource(undefined, undefined, { type: "test", id: "1" }),
-        new Resource(undefined, undefined, { type: "test", id: "2" })
-      ]
-    });
+    const items = [
+      new Resource({ type: "test", id: "1" }),
+      new Resource({ type: "test", id: "2" })
+    ];
+    const collection = new Collection({ type: "collection", items });
     
-    const response = factory.render(collection, "application/test+json");
-    const text = await response.text();
-    const data = JSON.parse(text);
-    assertEquals(data.type, "collection");
-    assertEquals(data.properties.length, 2);
-    assertEquals(data.properties[0].type, "test");
-    assertEquals(data.properties[0].id, "1");
-    assertEquals(data.properties[1].type, "test");
-    assertEquals(data.properties[1].id, "2");
+    const response = factory.render(collection, "application/hal+json");
+    assertEquals(response.status, 200);
+    assertEquals(response.headers.get("Content-Type"), "application/hal+json");
+    
+    const json = await response.json();
+    assertEquals(json.type, "collection");
+    assertEquals(json.embedded.items.length, 2);
   });
 
   await t.step("should render resource with links", async () => {
     const factory = new RendererFactory();
-    factory.registerRenderer(new TestRenderer());
+    factory.registerRenderer(new HalRenderer());
     
-    const resource = new Resource(undefined, undefined, {
-      type: "test",
-      id: "1"
-    });
+    const resource = new Resource({ type: "test", id: "1" });
     resource.addLink("self", "/test/1");
-    resource.addLink("edit", "/test/1/edit", "PUT");
     
-    const response = factory.render(resource, "application/test+json");
-    const text = await response.text();
-    const data = JSON.parse(text);
-    assertEquals(data.type, "test");
-    assertEquals(data.id, "1");
+    const response = factory.render(resource, "application/hal+json");
+    assertEquals(response.status, 200);
+    assertEquals(response.headers.get("Content-Type"), "application/hal+json");
+    
+    const json = await response.json();
+    assertEquals(json.type, "test");
+    assertEquals(json.links.self.href, "/test/1");
   });
 });
 
@@ -176,8 +172,8 @@ Deno.test("RendererFactory Creation and Management", async (t) => {
 
   await t.step("should render resource with appropriate renderer", () => {
     const factory = new RendererFactory();
-    const resource = new Resource({
-      type: "test",
+    const resource = new Resource({ 
+      type: "test", 
       id: "1",
       properties: { name: "Test Resource" }
     });

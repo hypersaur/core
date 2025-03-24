@@ -10,55 +10,62 @@ Deno.test("Resource Creation and Initialization", async (t) => {
     const resource = new Resource();
     assertEquals(resource.getType(), "");
     assertEquals(resource.getId(), "");
-    assertEquals(Object.keys(resource.getProperties()).length, 0);
+    assertEquals(resource.getProperties(), {});
   });
 
   await t.step("should create a resource with type and id", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     assertEquals(resource.getType(), "article");
     assertEquals(resource.getId(), "123");
+    assertEquals(resource.getProperties(), {});
   });
 
   await t.step("should create a resource with properties", () => {
-    const resource = new Resource("article", "123", {
+    const resource = new Resource({ 
+      type: "article", 
+      id: "123",
       properties: { title: "Test Article" }
     });
-    assertEquals(resource.getProperty("title"), "Test Article");
+    assertEquals(resource.getType(), "article");
+    assertEquals(resource.getId(), "123");
+    assertEquals(resource.getProperties(), { title: "Test Article" });
   });
 
   await t.step("should create a resource with initial links", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.addLink("self", "/articles/123");
     const link = resource.getLink("self");
     assertExists(link);
     if (!Array.isArray(link)) {
       assertEquals(link.href, "/articles/123");
+      assertEquals(link.rel, "self");
     }
   });
 
   await t.step("should create a resource with initial state", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     assertEquals(resource.getState(), "draft");
   });
 
   await t.step("should handle complex initialization", () => {
-    const resource = new Resource("article", "123", {
+    const resource = new Resource({ 
+      type: "article", 
+      id: "123",
       properties: { title: "Test Article" }
     });
     resource.addLink("self", "/articles/123");
     resource.setState("draft");
-
+    
     assertEquals(resource.getType(), "article");
     assertEquals(resource.getId(), "123");
-    assertEquals(resource.getProperty("title"), "Test Article");
-    
+    assertEquals(resource.getProperties(), { title: "Test Article" });
     const link = resource.getLink("self");
     assertExists(link);
     if (!Array.isArray(link)) {
       assertEquals(link.href, "/articles/123");
+      assertEquals(link.rel, "self");
     }
-    
     assertEquals(resource.getState(), "draft");
   });
 });
@@ -145,7 +152,7 @@ Deno.test("Resource Properties Management", async (t) => {
 
 Deno.test("Resource Link Management", async (t) => {
   await t.step("should add and get links", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.addLink("self", "/articles/123");
     
     const link = resource.getLink("self");
@@ -156,7 +163,7 @@ Deno.test("Resource Link Management", async (t) => {
   });
 
   await t.step("should handle multiple links with same relation", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.addLink("author", "/authors/1");
     resource.addLink("author", "/authors/2");
     
@@ -170,7 +177,7 @@ Deno.test("Resource Link Management", async (t) => {
   });
 
   await t.step("should handle link options", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.addLink("edit", "/articles/123/edit", "PUT", {
       title: "Edit Article",
       type: "application/json"
@@ -187,7 +194,7 @@ Deno.test("Resource Link Management", async (t) => {
   });
 
   await t.step("should handle templated links", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.addTemplatedLink("search", "/articles/search?q={query}");
     
     const link = resource.getLink("search");
@@ -201,13 +208,13 @@ Deno.test("Resource Link Management", async (t) => {
 
 Deno.test("Resource State Management", async (t) => {
   await t.step("should set and get state", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     assertEquals(resource.getState(), "draft");
   });
 
   await t.step("should handle state transitions", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     
     resource.addTransition(
@@ -224,7 +231,7 @@ Deno.test("Resource State Management", async (t) => {
   });
 
   await t.step("should handle transition conditions", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     
     resource.addTransition(
@@ -243,7 +250,7 @@ Deno.test("Resource State Management", async (t) => {
   });
 
   await t.step("should handle invalid transitions", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     
     resource.addTransition(
@@ -259,7 +266,7 @@ Deno.test("Resource State Management", async (t) => {
   });
 
   await t.step("should apply valid transitions", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     
     resource.addTransition(
@@ -275,7 +282,7 @@ Deno.test("Resource State Management", async (t) => {
   });
 
   await t.step("should throw error for invalid transition", () => {
-    const resource = new Resource("article", "123");
+    const resource = new Resource({ type: "article", id: "123" });
     resource.setState("draft");
     
     assertThrows(
@@ -288,8 +295,8 @@ Deno.test("Resource State Management", async (t) => {
 
 Deno.test("Resource Embedding", async (t) => {
   await t.step("should embed single resource", () => {
-    const parent = new Resource("article", "1");
-    const child = new Resource("author", "123");
+    const parent = new Resource({ type: "article", id: "1" });
+    const child = new Resource({ type: "author", id: "123" });
     
     parent.embed("author", child);
     
@@ -301,10 +308,10 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should embed multiple resources", () => {
-    const parent = new Resource("article", "1");
+    const parent = new Resource({ type: "article", id: "1" });
     const comments = [
-      new Resource("comment", "1"),
-      new Resource("comment", "2")
+      new Resource({ type: "comment", id: "1" }),
+      new Resource({ type: "comment", id: "2" })
     ];
     
     parent.embed("comments", comments);
@@ -317,9 +324,9 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should handle nested embedding", () => {
-    const article = new Resource("article", "1");
-    const author = new Resource("author", "123");
-    const company = new Resource("company", "456");
+    const article = new Resource({ type: "article", id: "1" });
+    const author = new Resource({ type: "author", id: "123" });
+    const company = new Resource({ type: "company", id: "456" });
     
     author.embed("company", company);
     article.embed("author", author);
@@ -334,8 +341,8 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should check if resource has embedded resources", () => {
-    const parent = new Resource("article", "1");
-    const child = new Resource("author", "123");
+    const parent = new Resource({ type: "article", id: "1" });
+    const child = new Resource({ type: "author", id: "123" });
     
     parent.embed("author", child);
     
@@ -344,11 +351,11 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should get all embedded resources", () => {
-    const parent = new Resource("article", "1");
-    const author = new Resource("author", "123");
+    const parent = new Resource({ type: "article", id: "1" });
+    const author = new Resource({ type: "author", id: "123" });
     const comments = [
-      new Resource("comment", "1"),
-      new Resource("comment", "2")
+      new Resource({ type: "comment", id: "1" }),
+      new Resource({ type: "comment", id: "2" })
     ];
     
     parent.embed("author", author);
@@ -362,7 +369,7 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should handle empty embedded resources", () => {
-    const parent = new Resource("article", "1");
+    const parent = new Resource({ type: "article", id: "1" });
     parent.embed("comments", []);
     
     const embedded = parent.getEmbedded("comments") as Resource[];
@@ -371,8 +378,8 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should handle updating embedded resources", () => {
-    const parent = new Resource("article", "1");
-    const author = new Resource("author", "123");
+    const parent = new Resource({ type: "article", id: "1" });
+    const author = new Resource({ type: "author", id: "123" });
     
     parent.embed("author", author);
     
@@ -388,8 +395,8 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should handle circular references", () => {
-    const article = new Resource("article", "1");
-    const author = new Resource("author", "123");
+    const article = new Resource({ type: "article", id: "1" });
+    const author = new Resource({ type: "author", id: "123" });
     
     article.embed("author", author);
     author.embed("articles", article);
@@ -400,9 +407,9 @@ Deno.test("Resource Embedding", async (t) => {
   });
 
   await t.step("should handle deep nested updates", () => {
-    const article = new Resource("article", "1");
-    const author = new Resource("author", "123");
-    const company = new Resource("company", "456");
+    const article = new Resource({ type: "article", id: "1" });
+    const author = new Resource({ type: "author", id: "123" });
+    const company = new Resource({ type: "company", id: "456" });
     
     author.embed("company", company);
     article.embed("author", author);

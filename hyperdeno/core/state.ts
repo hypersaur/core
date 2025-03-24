@@ -116,9 +116,15 @@ export class ResourceState {
       
       // Check conditions if any
       if (transition.conditions) {
-        return Object.entries(transition.conditions).every(
-          ([key, value]) => properties[key] === value
-        );
+        return Object.entries(transition.conditions).every(([key, condition]) => {
+          if (typeof condition === 'object' && condition !== null) {
+            if ('exists' in condition) {
+              return condition.exists ? key in properties : !(key in properties);
+            }
+            return false;
+          }
+          return properties[key] === condition;
+        });
       }
       
       return true;
@@ -126,39 +132,21 @@ export class ResourceState {
   }
   
   /**
-   * Apply a transition
-   * @param currentState - Current state
-   * @param transitionName - Transition name to apply
-   * @param properties - Resource properties to check against conditions
-   * @returns The new state
-   * @throws {StateTransitionError} If the transition is not available
+   * Apply a transition by name
+   * @param name - Transition name
+   * @param state - Current state
+   * @param properties - Resource properties
+   * @returns New state
+   * @throws {StateTransitionError} If transition is not available
    */
-  applyTransition(currentState: string, transitionName: string, properties: Record<string, unknown> = {}): string {
-    // Find the transition
-    const transition = this.transitions.find(
-      t => t.name === transitionName && t.from === currentState
-    );
+  applyTransition(name: string, state: string, properties: Record<string, unknown> = {}): string {
+    const availableTransitions = this.getAvailableTransitions(state, properties);
+    const transition = availableTransitions.find(t => t.name === name);
     
     if (!transition) {
-      throw new StateTransitionError(
-        `Transition '${transitionName}' not available from state '${currentState}'`
-      );
+      throw new StateTransitionError(`No transition found with name '${name}'`);
     }
     
-    // Check conditions
-    if (transition.conditions) {
-      const conditionsMet = Object.entries(transition.conditions).every(
-        ([key, value]) => properties[key] === value
-      );
-      
-      if (!conditionsMet) {
-        throw new StateTransitionError(
-          `Conditions not met for transition '${transitionName}'`
-        );
-      }
-    }
-    
-    // Return the new state
     return transition.to;
   }
   

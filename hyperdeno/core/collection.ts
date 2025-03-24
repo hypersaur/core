@@ -67,10 +67,14 @@ export class Collection extends Resource {
    * @param {CollectionOptions} options - Configuration options for the collection
    */
   constructor(options: CollectionOptions = {}) {
-    super(options.type || 'collection', options.id, { properties: options.properties || {} });
+    super({
+      ...options,
+      type: options.type || 'collection'
+    });
     if (options.items && Array.isArray(options.items)) {
       this.addItems(options.items);
     }
+    this.#pagination = null;
   }
   
   /**
@@ -330,5 +334,24 @@ export class Collection extends Resource {
     }
     
     return json;
+  }
+  
+  /**
+   * Sorts the collection items using the provided comparison function
+   * @param {Function} compareFn - The comparison function to use for sorting
+   * @returns {Collection} The collection instance for method chaining
+   */
+  sort(compareFn: (a: Resource, b: Resource) => number): Collection {
+    this.#items.sort(compareFn);
+    return this;
+  }
+  
+  /**
+   * Filters the collection items using the provided predicate function
+   * @param {Function} predicate - The predicate function to use for filtering
+   * @returns {Resource[]} The filtered array of resources
+   */
+  filter(predicate: (item: Resource) => boolean): Resource[] {
+    return this.#items.filter(predicate);
   }
 } 

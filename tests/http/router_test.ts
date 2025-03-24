@@ -98,26 +98,32 @@ Deno.test("Router Creation and Management", async (t) => {
     router.resource("/articles", {
       list: () => {
         const articles = [
-          new Resource("article", "1"),
-          new Resource("article", "2")
+          new Resource({ type: "article", id: "1" }),
+          new Resource({ type: "article", id: "2" })
         ];
         const collection = new Collection({ type: "articles", items: articles });
         return createResponse(collection);
       },
       get: (request, params) => {
-        const article = new Resource("article", params.id, {
+        const article = new Resource({ 
+          type: "article", 
+          id: params.id,
           properties: { title: "Test Article" }
         });
         return createResponse(article);
       },
       create: () => {
-        const article = new Resource("article", "new", {
+        const article = new Resource({ 
+          type: "article", 
+          id: "new",
           properties: { title: "New Article" }
         });
         return createResponse(article, { status: 201 });
       },
       update: (request, params) => {
-        const article = new Resource("article", params.id, {
+        const article = new Resource({ 
+          type: "article", 
+          id: params.id,
           properties: { title: "Updated Article" }
         });
         return createResponse(article);

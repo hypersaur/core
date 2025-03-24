@@ -49,17 +49,14 @@ export class Resource {
 
   /**
    * Creates a new Resource instance
-   * @param {string} [type] - The type of the resource
-   * @param {string} [id] - The unique identifier of the resource
    * @param {ResourceOptions} [options] - Additional configuration options
    */
-  constructor(type?: string, id?: string, options: ResourceOptions = {}) {
+  constructor(options: ResourceOptions = {}) {
+    this.type = options.type || '';
+    this.id = options.id || '';
+    this.properties = options.properties || {};
     this.linkManager = new LinkManager();
     this.stateManager = new ResourceState();
-    
-    if (type) this.setType(type);
-    if (id) this.setId(id);
-    if (options.properties) this.setProperties(options.properties);
   }
 
   /**
@@ -116,6 +113,27 @@ export class Resource {
     if (!key || typeof key !== 'string') {
       throw new InvalidArgumentError('Property key must be a string');
     }
+
+    // Handle nested properties
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      let current = this.properties;
+      const lastPart = parts.pop()!;
+
+      for (const part of parts) {
+        if (!(part in current)) {
+          current[part] = {};
+        }
+        if (typeof current[part] !== 'object') {
+          current[part] = {};
+        }
+        current = current[part] as Record<string, unknown>;
+      }
+      
+      current[lastPart] = value;
+      return;
+    }
+
     this.properties[key] = value;
   }
 
@@ -327,21 +345,15 @@ export class Resource {
 
   /**
    * Apply a state transition
-   * @param transitionName - Name of the transition to apply
-   * @throws {StateTransitionError} If the transition is invalid
+   * @param {string} name - The name of the transition to apply
+   * @throws {StateTransitionError} If the transition is not available
+   * @returns {Resource} The resource instance for method chaining
    */
-  applyTransition(transitionName: string): void {
-    try {
-      this.stateManager.setState(this.stateManager.applyTransition(this.getState(), transitionName, this.getProperties()));
-    } catch (error) {
-      if (error instanceof StateTransitionError) {
-        throw error;
-      }
-      if (error instanceof Error) {
-        throw new StateTransitionError(`Failed to apply transition "${transitionName}": ${error.message}`);
-      }
-      throw new StateTransitionError(`Failed to apply transition "${transitionName}"`);
-    }
+  applyTransition(name: string): Resource {
+    const currentState = this.getState();
+    const newState = this.stateManager.applyTransition(name, currentState, this.getProperties());
+    this.setState(newState);
+    return this;
   }
 
   /**
@@ -350,16 +362,16 @@ export class Resource {
    */
   clone(): Resource {
     const json = this.toJSON();
-    const { _type, _id, _links, _embedded, _state, ...properties } = json;
-    const clone = new Resource(
-      typeof _type === 'string' ? _type : undefined,
-      typeof _id === 'string' ? _id : undefined,
-      { properties: properties as Record<string, unknown> }
-    );
+    const { type, id, links, embedded, state, ...properties } = json;
+    const clone = new Resource({
+      type: typeof type === 'string' ? type : undefined,
+      id: typeof id === 'string' ? id : undefined,
+      properties: properties as Record<string, unknown>
+    });
     
     // Restore links
-    if (_links) {
-      Object.entries(_links).forEach(([rel, link]) => {
+    if (links) {
+      Object.entries(links).forEach(([rel, link]) => {
         if (Array.isArray(link)) {
           link.forEach(l => clone.addLink(rel, l.href, l.method, {
             templated: l.templated,
@@ -381,21 +393,21 @@ export class Resource {
     }
 
     // Restore embedded resources
-    if (_embedded) {
-      Object.entries(_embedded).forEach(([rel, resources]) => {
+    if (embedded) {
+      Object.entries(embedded).forEach(([rel, resources]) => {
         if (Array.isArray(resources)) {
-          clone.embed(rel, resources.map(r => new Resource(
-            typeof r._type === 'string' ? r._type : undefined,
-            typeof r._id === 'string' ? r._id : undefined,
-            { properties: r as Record<string, unknown> }
-          )));
+          clone.embed(rel, resources.map(r => new Resource({
+            type: typeof r.type === 'string' ? r.type : undefined,
+            id: typeof r.id === 'string' ? r.id : undefined,
+            properties: r as Record<string, unknown>
+          })));
         }
       });
     }
 
     // Restore state
-    if (typeof _state === 'string') {
-      clone.setState(_state);
+    if (typeof state === 'string') {
+      clone.setState(state);
     }
 
     return clone;
@@ -406,27 +418,33 @@ export class Resource {
    * @returns {Record<string, unknown>} The resource as a JSON object
    */
   toJSON(): Record<string, unknown> {
-    const json: Record<string, unknown> = {
-      ...this.properties,
-      _links: this.getLinks()
-    };
+    const json: Record<string, unknown> = {};
 
     if (this.type) {
-      json._type = this.type;
+      json.type = this.type;
     }
 
     if (this.id) {
-      json._id = this.id;
+      json.id = this.id;
+    }
+
+    const links = this.getLinks();
+    if (Object.keys(links).length > 0) {
+      json.links = links;
     }
 
     const embedded = this.getEmbedded();
     if (embedded && Object.keys(embedded).length > 0) {
-      json._embedded = embedded;
+      json.embedded = embedded;
     }
 
     const state = this.getState();
     if (state) {
-      json._state = state;
+      json.state = state;
+    }
+
+    if (Object.keys(this.properties).length > 0) {
+      json.properties = { ...this.properties };
     }
 
     return json;

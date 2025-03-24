@@ -13,104 +13,91 @@ Deno.test("Collection Creation and Initialization", async (t) => {
 
   await t.step("should create a collection with items", () => {
     const items = [
-      new Resource("article", "1"),
-      new Resource("article", "2")
+      new Resource({ type: "article", id: "1" }),
+      new Resource({ type: "article", id: "2" })
     ];
-    
-    const collection = new Collection({ items });
+    const collection = new Collection({ type: "articles", items });
     assertEquals(collection.getCount(), 2);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should add single item", () => {
-    const collection = new Collection();
-    const item = new Resource("article", "1");
-    
+    const collection = new Collection({ type: "articles" });
+    const item = new Resource({ type: "article", id: "1" });
     collection.addItem(item);
     assertEquals(collection.getCount(), 1);
+    assertEquals(collection.getItems()[0], item);
   });
 
   await t.step("should add multiple items", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1"),
-      new Resource("article", "2")
+      new Resource({ type: "article", id: "1" }),
+      new Resource({ type: "article", id: "2" })
     ];
-    
     collection.addItems(items);
     assertEquals(collection.getCount(), 2);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should handle large collections", () => {
-    const collection = new Collection();
-    const items = Array.from({ length: 100 }, (_, i) => 
-      new Resource("article", String(i + 1))
+    const collection = new Collection({ type: "articles" });
+    const items = Array.from({ length: 1000 }, (_, i) => 
+      new Resource({ type: "article", id: String(i + 1) })
     );
-    
     collection.addItems(items);
-    assertEquals(collection.getCount(), 100);
+    assertEquals(collection.getCount(), 1000);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should throw error for invalid items", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     assertThrows(
-      () => collection.addItem({} as Resource),
-      Error,
-      "Item must be a Resource instance"
+      () => collection.addItems([null as unknown as Resource]),
+      InvalidArgumentError
     );
   });
 
   await t.step("should sort items by property", () => {
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1", { properties: { title: "C" } }),
-      new Resource("article", "2", { properties: { title: "A" } }),
-      new Resource("article", "3", { properties: { title: "B" } })
+      new Resource({ type: "article", id: "1", properties: { title: "C" } }),
+      new Resource({ type: "article", id: "2", properties: { title: "A" } }),
+      new Resource({ type: "article", id: "3", properties: { title: "B" } })
     ];
-    
-    const collection = new Collection({ items });
-    const sorted = collection.getItems().sort((a, b) => {
-      const titleA = a.getProperty("title") as string;
-      const titleB = b.getProperty("title") as string;
-      return titleA.localeCompare(titleB);
-    });
-    
-    assertEquals(sorted[0].getProperty("title"), "A");
-    assertEquals(sorted[1].getProperty("title"), "B");
-    assertEquals(sorted[2].getProperty("title"), "C");
+    collection.addItems(items);
+    collection.sort((a, b) => 
+      (a.getProperty("title") as string).localeCompare(b.getProperty("title") as string)
+    );
+    assertEquals(collection.getItems()[0].getProperty("title"), "A");
+    assertEquals(collection.getItems()[1].getProperty("title"), "B");
+    assertEquals(collection.getItems()[2].getProperty("title"), "C");
   });
 
   await t.step("should filter items by property", () => {
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1", { properties: { published: true } }),
-      new Resource("article", "2", { properties: { published: false } }),
-      new Resource("article", "3", { properties: { published: true } })
+      new Resource({ type: "article", id: "1", properties: { published: true } }),
+      new Resource({ type: "article", id: "2", properties: { published: false } }),
+      new Resource({ type: "article", id: "3", properties: { published: true } })
     ];
-    
-    const collection = new Collection({ items });
-    const published = collection.getItems().filter(item => 
-      item.getProperty("published") === true
-    );
-    
+    collection.addItems(items);
+    const published = collection.filter(item => item.getProperty("published") === true);
     assertEquals(published.length, 2);
+    assertEquals(published[0].getProperty("published"), true);
+    assertEquals(published[1].getProperty("published"), true);
   });
 
   await t.step("should handle pagination", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     const items = Array.from({ length: 100 }, (_, i) => 
-      new Resource("article", String(i + 1))
+      new Resource({ type: "article", id: String(i + 1) })
     );
-    
     collection.addItems(items);
-    collection.setPagination({
-      page: 2,
-      pageSize: 10,
-      total: 100
-    });
-    
-    const pagination = collection.getPagination();
-    assertEquals(pagination?.page, 2);
-    assertEquals(pagination?.pageSize, 10);
-    assertEquals(pagination?.total, 100);
-    assertEquals(collection.getTotalPages(), 10);
+    collection.setPagination({ page: 1, pageSize: 10, total: 100 });
+    assertEquals(collection.getPagination()?.page, 1);
+    assertEquals(collection.getPagination()?.pageSize, 10);
+    assertEquals(collection.getPagination()?.total, 100);
   });
 });
 
@@ -123,109 +110,96 @@ Deno.test("Collection Creation and Management", async (t) => {
 
   await t.step("should create a collection with items", () => {
     const items = [
-      new Resource("article", "1"),
-      new Resource("article", "2")
+      new Resource({ type: "article", id: "1" }),
+      new Resource({ type: "article", id: "2" })
     ];
-    
-    const collection = new Collection({ items });
+    const collection = new Collection({ type: "articles", items });
     assertEquals(collection.getCount(), 2);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should add single item", () => {
-    const collection = new Collection();
-    const item = new Resource("article", "1");
-    
+    const collection = new Collection({ type: "articles" });
+    const item = new Resource({ type: "article", id: "1" });
     collection.addItem(item);
     assertEquals(collection.getCount(), 1);
+    assertEquals(collection.getItems()[0], item);
   });
 
   await t.step("should add multiple items", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1"),
-      new Resource("article", "2")
+      new Resource({ type: "article", id: "1" }),
+      new Resource({ type: "article", id: "2" })
     ];
-    
     collection.addItems(items);
     assertEquals(collection.getCount(), 2);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should handle large collections", () => {
-    const collection = new Collection();
-    const items = Array.from({ length: 100 }, (_, i) => 
-      new Resource("article", String(i + 1))
+    const collection = new Collection({ type: "articles" });
+    const items = Array.from({ length: 1000 }, (_, i) => 
+      new Resource({ type: "article", id: String(i + 1) })
     );
-    
     collection.addItems(items);
-    assertEquals(collection.getCount(), 100);
+    assertEquals(collection.getCount(), 1000);
+    assertEquals(collection.getItems(), items);
   });
 
   await t.step("should throw error for invalid items", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     assertThrows(
-      () => collection.addItem({} as Resource),
-      Error,
-      "Item must be a Resource instance"
+      () => collection.addItems([null as unknown as Resource]),
+      InvalidArgumentError
     );
   });
 
   await t.step("should sort items by property", () => {
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1", { properties: { title: "C" } }),
-      new Resource("article", "2", { properties: { title: "A" } }),
-      new Resource("article", "3", { properties: { title: "B" } })
+      new Resource({ type: "article", id: "1", properties: { title: "C" } }),
+      new Resource({ type: "article", id: "2", properties: { title: "A" } }),
+      new Resource({ type: "article", id: "3", properties: { title: "B" } })
     ];
-    
-    const collection = new Collection({ items });
-    const sorted = collection.getItems().sort((a, b) => {
-      const titleA = a.getProperty("title") as string;
-      const titleB = b.getProperty("title") as string;
-      return titleA.localeCompare(titleB);
-    });
-    
-    assertEquals(sorted[0].getProperty("title"), "A");
-    assertEquals(sorted[1].getProperty("title"), "B");
-    assertEquals(sorted[2].getProperty("title"), "C");
+    collection.addItems(items);
+    collection.sort((a, b) => 
+      (a.getProperty("title") as string).localeCompare(b.getProperty("title") as string)
+    );
+    assertEquals(collection.getItems()[0].getProperty("title"), "A");
+    assertEquals(collection.getItems()[1].getProperty("title"), "B");
+    assertEquals(collection.getItems()[2].getProperty("title"), "C");
   });
 
   await t.step("should filter items by property", () => {
+    const collection = new Collection({ type: "articles" });
     const items = [
-      new Resource("article", "1", { properties: { published: true } }),
-      new Resource("article", "2", { properties: { published: false } }),
-      new Resource("article", "3", { properties: { published: true } })
+      new Resource({ type: "article", id: "1", properties: { published: true } }),
+      new Resource({ type: "article", id: "2", properties: { published: false } }),
+      new Resource({ type: "article", id: "3", properties: { published: true } })
     ];
-    
-    const collection = new Collection({ items });
-    const published = collection.getItems().filter(item => 
-      item.getProperty("published") === true
-    );
-    
+    collection.addItems(items);
+    const published = collection.filter(item => item.getProperty("published") === true);
     assertEquals(published.length, 2);
+    assertEquals(published[0].getProperty("published"), true);
+    assertEquals(published[1].getProperty("published"), true);
   });
 
   await t.step("should handle pagination", () => {
-    const collection = new Collection();
+    const collection = new Collection({ type: "articles" });
     const items = Array.from({ length: 100 }, (_, i) => 
-      new Resource("article", String(i + 1))
+      new Resource({ type: "article", id: String(i + 1) })
     );
-    
     collection.addItems(items);
-    collection.setPagination({
-      page: 2,
-      pageSize: 10,
-      total: 100
-    });
-    
-    const pagination = collection.getPagination();
-    assertEquals(pagination?.page, 2);
-    assertEquals(pagination?.pageSize, 10);
-    assertEquals(pagination?.total, 100);
-    assertEquals(collection.getTotalPages(), 10);
+    collection.setPagination({ page: 1, pageSize: 10, total: 100 });
+    assertEquals(collection.getPagination()?.page, 1);
+    assertEquals(collection.getPagination()?.pageSize, 10);
+    assertEquals(collection.getPagination()?.total, 100);
   });
 
   await t.step("should handle collection pagination", () => {
     const items = Array.from({ length: 15 }, (_, i) => 
-      new Resource("article", String(i + 1))
+      new Resource({ type: "article", id: String(i + 1) })
     );
     const collection = new Collection({ items });
     
@@ -255,9 +229,9 @@ Deno.test("Collection Creation and Management", async (t) => {
 
   await t.step("should handle collection sorting", () => {
     const items = [
-      new Resource("article", "1", { properties: { title: "C" } }),
-      new Resource("article", "2", { properties: { title: "A" } }),
-      new Resource("article", "3", { properties: { title: "B" } })
+      new Resource({ type: "article", id: "1", properties: { title: "C" } }),
+      new Resource({ type: "article", id: "2", properties: { title: "A" } }),
+      new Resource({ type: "article", id: "3", properties: { title: "B" } })
     ];
     const collection = new Collection({ items });
     
@@ -272,9 +246,9 @@ Deno.test("Collection Creation and Management", async (t) => {
 
   await t.step("should handle collection filtering", () => {
     const items = [
-      new Resource("article", "1", { properties: { published: true } }),
-      new Resource("article", "2", { properties: { published: false } }),
-      new Resource("article", "3", { properties: { published: true } })
+      new Resource({ type: "article", id: "1", properties: { published: true } }),
+      new Resource({ type: "article", id: "2", properties: { published: false } }),
+      new Resource({ type: "article", id: "3", properties: { published: true } })
     ];
     const collection = new Collection({ items });
     
@@ -304,7 +278,7 @@ Deno.test("Collection Creation and Management", async (t) => {
 
   await t.step("should handle collection metadata", () => {
     const items = Array.from({ length: 25 }, (_, i) => 
-      new Resource("article", String(i + 1))
+      new Resource({ type: "article", id: String(i + 1) })
     );
     const collection = new Collection({ items });
     

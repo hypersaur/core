@@ -7,6 +7,7 @@
 
 import { Resource } from '../core/resource.ts';
 import { Collection } from '../core/collection.ts';
+import { NotFoundError } from '../core/errors.ts';
 
 /**
  * Response options interface
@@ -155,18 +156,24 @@ export function addHateoasHeaders(response: Response): Response {
 }
 
 /**
- * Create an error response
+ * Create an error response with appropriate status code and format
  * @param error - Error object
  * @returns Web standard Response with error details
  */
 export function createErrorResponse(error: Error): Response {
-  return createJsonResponse({
-    error: error.message,
-    status: 500
-  }, {
-    status: 500,
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  });
+  let status = 500;
+  let code = 'INTERNAL_ERROR';
+
+  if (error instanceof NotFoundError) {
+    status = 404;
+    code = 'NOT_FOUND';
+  }
+
+  const errorResponse = {
+    status,
+    code,
+    message: error.message
+  };
+
+  return createJsonResponse(errorResponse, { status });
 } 
