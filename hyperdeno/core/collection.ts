@@ -67,12 +67,7 @@ export class Collection extends Resource {
    * @param {CollectionOptions} options - Configuration options for the collection
    */
   constructor(options: CollectionOptions = {}) {
-    super({
-      type: options.type || 'collection',
-      id: options.id,
-      properties: options.properties || {}
-    });
-    
+    super(options.type || 'collection', options.id, { properties: options.properties || {} });
     if (options.items && Array.isArray(options.items)) {
       this.addItems(options.items);
     }

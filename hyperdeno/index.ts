@@ -9,16 +9,12 @@ import { Server } from './server.ts';
 import { Resource } from './core/resource.ts';
 import { Collection } from './core/collection.ts';
 import { Router } from './http/router.ts';
-import { JsonRenderer } from './rendering/json-renderer.ts';
-import { HtmlRenderer } from './rendering/html-renderer.ts';
-import { ContentNegotiator } from './rendering/negotiation.ts';
+import { RendererFactory } from './rendering/renderer_factory.ts';
 
 export { Resource } from './core/resource.ts';
 export { Collection } from './core/collection.ts';
 export { Router } from './http/router.ts';
-export { JsonRenderer } from './rendering/json-renderer.ts';
-export { HtmlRenderer } from './rendering/html-renderer.ts';
-export { ContentNegotiator } from './rendering/negotiation.ts';
+export { RendererFactory } from './rendering/renderer_factory.ts';
 export { Server } from './server.ts';
 
 /**
@@ -27,19 +23,23 @@ export { Server } from './server.ts';
  */
 export function createApp() {
   const router = new Router();
-  const jsonRenderer = new JsonRenderer();
-  const htmlRenderer = new HtmlRenderer();
-  const negotiator = new ContentNegotiator();
-  
-  negotiator.addRenderers([jsonRenderer, htmlRenderer]);
+  let rendererFactory: RendererFactory | null = null;
   
   return {
     getRouter: () => router,
-    setContentNegotiator: (negotiator: ContentNegotiator) => {
-      // Store the negotiator for later use
+    setRendererFactory: (factory: RendererFactory) => {
+      rendererFactory = factory;
     },
     handle: async (request: Request): Promise<Response> => {
       const response = await router.handle(request);
+      
+      // If we have a renderer factory and the response contains a resource,
+      // use the factory to render it
+      if (rendererFactory && response.body instanceof Resource) {
+        const acceptHeader = request.headers.get('accept') || '';
+        return rendererFactory.render(response.body, acceptHeader);
+      }
+      
       return response;
     }
   };

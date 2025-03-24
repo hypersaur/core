@@ -152,4 +152,21 @@ export function addHateoasHeaders(response: Response): Response {
     statusText: response.statusText,
     headers: newHeaders
   });
+}
+
+/**
+ * Create an error response
+ * @param error - Error object
+ * @returns Web standard Response with error details
+ */
+export function createErrorResponse(error: Error): Response {
+  return createJsonResponse({
+    error: error.message,
+    status: 500
+  }, {
+    status: 500,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
 } 

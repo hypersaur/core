@@ -8,75 +8,77 @@
 import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { createApp, Resource, Collection } from './index.ts';
 import { Router } from './http/router.ts';
-import { JsonRenderer } from './rendering/json-renderer.ts';
-import { HtmlRenderer } from './rendering/html-renderer.ts';
-import { ContentNegotiator } from './rendering/negotiation.ts';
+import { RendererFactory } from './rendering/renderer_factory.ts';
+import { createResponse } from './http/response.ts';
+import { ApiError } from './core/errors.ts';
 
 export interface ServerOptions {
   port?: number;
   hostname?: string;
-  renderers?: Array<JsonRenderer | HtmlRenderer>;
+  rendererFactory?: RendererFactory;
 }
 
 export class Server {
-  private app = createApp();
   private port: number;
   private hostname: string;
   private server: AbortController | null = null;
+  private rendererFactory: RendererFactory;
+  private router: Router;
 
+  /**
+   * Creates a new server instance
+   * @param {ServerOptions} options - Server configuration options
+   */
   constructor(options: ServerOptions = {}) {
     this.port = options.port || 8000;
-    this.hostname = options.hostname || 'localhost';
-    
-    // Add default renderers if none provided
-    if (!options.renderers) {
-      const jsonRenderer = new JsonRenderer();
-      const htmlRenderer = new HtmlRenderer();
-      const negotiator = new ContentNegotiator();
-      negotiator.addRenderers([jsonRenderer, htmlRenderer]);
-      this.app.setContentNegotiator(negotiator);
-    } else {
-      const negotiator = new ContentNegotiator();
-      negotiator.addRenderers(options.renderers);
-      this.app.setContentNegotiator(negotiator);
-    }
+    this.hostname = options.hostname || '0.0.0.0';
+    this.router = new Router();
+    this.rendererFactory = options.rendererFactory || new RendererFactory();
   }
 
   /**
-   * Get the router instance
-   */
-  getRouter(): Router {
-    return this.app.getRouter();
-  }
-
-  /**
-   * Start the server
+   * Starts the server
+   * @returns {Promise<void>}
    */
   async start(): Promise<void> {
-    if (this.server) {
-      throw new Error('Server is already running');
-    }
-
     const handler = async (request: Request): Promise<Response> => {
       try {
-        return await this.app.handle(request);
+        const response = await this.router.handle(request);
+        return response;
       } catch (error) {
-        console.error('Error handling request:', error);
-        return new Response(
-          JSON.stringify({ error: 'Internal Server Error' }),
-          { status: 500, headers: { 'content-type': 'application/json' } }
-        );
+        if (error instanceof ApiError) {
+          return createResponse(error.toJSON(), { status: error.status });
+        }
+        return createResponse({
+          error: {
+            message: error instanceof Error ? error.message : 'Internal Server Error',
+            status: 500,
+            code: 'INTERNAL_ERROR'
+          }
+        }, { status: 500 });
       }
     };
 
-    this.server = new AbortController();
     await serve(handler, {
       port: this.port,
-      hostname: this.hostname,
-      signal: this.server.signal
+      hostname: this.hostname
     });
+  }
 
-    console.log(`Server running at http://${this.hostname}:${this.port}/`);
+  /**
+   * Gets the router instance
+   * @returns {Router} The router instance
+   */
+  getRouter(): Router {
+    return this.router;
+  }
+
+  /**
+   * Gets the renderer factory instance
+   * @returns {RendererFactory} The renderer factory instance
+   */
+  getRendererFactory(): RendererFactory {
+    return this.rendererFactory;
   }
 
   /**

@@ -19,8 +19,8 @@
  */
 
 import { LinkManager, LinkObject, LinkOptions } from './link.ts';
-import { ResourceState } from './state.ts';
-import { InvalidArgumentError } from './errors.ts';
+import { ResourceState, StateTransition } from './state.ts';
+import { InvalidArgumentError, StateTransitionError } from './errors.ts';
 
 /**
  * Options for creating a new Resource instance
@@ -33,25 +33,6 @@ export interface ResourceOptions {
   type?: string;
   id?: string;
   properties?: Record<string, unknown>;
-}
-
-/**
- * Represents a state transition in the resource's state machine
- * @interface StateTransition
- * @property {string} from - The source state
- * @property {string} to - The target state
- * @property {string} name - The name of the transition
- * @property {string} href - The URI for the transition
- * @property {string} [method] - The HTTP method for the transition (defaults to 'POST')
- * @property {Record<string, unknown>} [conditions] - Conditions that must be met for the transition
- */
-export interface StateTransition {
-  from: string;
-  to: string;
-  name: string;
-  href: string;
-  method?: string;
-  conditions?: Record<string, unknown>;
 }
 
 /**
@@ -68,14 +49,16 @@ export class Resource {
 
   /**
    * Creates a new Resource instance
-   * @param {ResourceOptions} options - Configuration options for the resource
+   * @param {string} [type] - The type of the resource
+   * @param {string} [id] - The unique identifier of the resource
+   * @param {ResourceOptions} [options] - Additional configuration options
    */
-  constructor(options: ResourceOptions = {}) {
+  constructor(type?: string, id?: string, options: ResourceOptions = {}) {
     this.linkManager = new LinkManager();
     this.stateManager = new ResourceState();
     
-    if (options.type) this.setType(options.type);
-    if (options.id) this.setId(options.id);
+    if (type) this.setType(type);
+    if (id) this.setId(id);
     if (options.properties) this.setProperties(options.properties);
   }
 
@@ -124,45 +107,62 @@ export class Resource {
   }
 
   /**
-   * Sets a single property on the resource
-   * @param {string} key - The property name
-   * @param {unknown} value - The property value
-   * @throws {InvalidArgumentError} If key is not a string
-   * @returns {Resource} The resource instance for method chaining
+   * Set a property on the resource
+   * @param key - Property key
+   * @param value - Property value
+   * @throws {InvalidArgumentError} If the property key is invalid
    */
-  setProperty(key: string, value: unknown): Resource {
-    if (typeof key !== 'string') {
+  setProperty(key: string, value: unknown): void {
+    if (!key || typeof key !== 'string') {
       throw new InvalidArgumentError('Property key must be a string');
     }
     this.properties[key] = value;
-    return this;
   }
 
   /**
-   * Sets multiple properties on the resource at once
-   * @param {Record<string, unknown>} properties - Object containing properties to set
+   * Gets a property from the resource
+   * @param {string} key - The property key
+   * @returns {unknown} The property value
+   */
+  getProperty(key: string): unknown {
+    if (!key || typeof key !== 'string') {
+      throw new InvalidArgumentError('Property key must be a non-empty string');
+    }
+
+    // Handle nested properties
+    if (key.includes('.')) {
+      const parts = key.split('.');
+      let current: Record<string, unknown> = this.properties;
+      
+      for (const part of parts) {
+        if (!(part in current)) {
+          return undefined;
+        }
+        current = current[part] as Record<string, unknown>;
+      }
+      
+      return current;
+    }
+    
+    return this.properties[key];
+  }
+
+  /**
+   * Sets multiple properties on the resource
+   * @param {Record<string, unknown>} properties - The properties to set
    * @throws {InvalidArgumentError} If properties is not an object
    * @returns {Resource} The resource instance for method chaining
    */
   setProperties(properties: Record<string, unknown>): Resource {
-    if (typeof properties !== 'object' || properties === null) {
+    if (!properties || typeof properties !== 'object') {
       throw new InvalidArgumentError('Properties must be an object');
     }
     
-    for (const [key, value] of Object.entries(properties)) {
+    Object.entries(properties).forEach(([key, value]) => {
       this.setProperty(key, value);
-    }
+    });
     
     return this;
-  }
-
-  /**
-   * Gets a property value by key
-   * @param {string} key - The property name
-   * @returns {unknown} The property value or undefined if not found
-   */
-  getProperty(key: string): unknown {
-    return this.properties[key];
   }
 
   /**
@@ -309,37 +309,39 @@ export class Resource {
   }
 
   /**
-   * Adds a state transition to the resource
-   * @param {string} from - The source state
-   * @param {string} to - The target state
-   * @param {string} name - The transition name
-   * @param {string} href - The transition URI
-   * @param {string} [method='POST'] - The HTTP method for the transition
-   * @param {Record<string, unknown>} [conditions] - Conditions for the transition
-   * @returns {Resource} The resource instance for method chaining
+   * Add a state transition
+   * @param from - Current state
+   * @param to - Target state
+   * @param name - Transition name
+   * @param href - Transition URI
+   * @param method - HTTP method for the transition
+   * @param conditions - Optional conditions for the transition
+   * @throws {InvalidArgumentError} If the states are invalid
    */
-  addStateTransition(from: string, to: string, name: string, href: string, method: string = 'POST', conditions?: Record<string, unknown>): Resource {
+  addTransition(from: string, to: string, name: string, href: string, method: string = 'POST', conditions?: Record<string, unknown>): void {
+    if (!from || !to) {
+      throw new InvalidArgumentError('State names must be non-empty strings');
+    }
     this.stateManager.addTransition(from, to, name, href, method, conditions);
-    return this;
   }
 
   /**
-   * Gets all available state transitions
-   * @returns {StateTransition[]} Array of available transitions
+   * Apply a state transition
+   * @param transitionName - Name of the transition to apply
+   * @throws {StateTransitionError} If the transition is invalid
    */
-  getAvailableTransitions(): StateTransition[] {
-    return this.stateManager.getAvailableTransitions(this.getState(), this.getProperties());
-  }
-
-  /**
-   * Applies a state transition by name
-   * @param {string} transitionName - The name of the transition to apply
-   * @returns {Resource} The resource instance for method chaining
-   */
-  applyTransition(transitionName: string): Resource {
-    const newState = this.stateManager.applyTransition(this.getState(), transitionName, this.getProperties());
-    this.setState(newState);
-    return this;
+  applyTransition(transitionName: string): void {
+    try {
+      this.stateManager.setState(this.stateManager.applyTransition(this.getState(), transitionName, this.getProperties()));
+    } catch (error) {
+      if (error instanceof StateTransitionError) {
+        throw error;
+      }
+      if (error instanceof Error) {
+        throw new StateTransitionError(`Failed to apply transition "${transitionName}": ${error.message}`);
+      }
+      throw new StateTransitionError(`Failed to apply transition "${transitionName}"`);
+    }
   }
 
   /**
@@ -347,47 +349,54 @@ export class Resource {
    * @returns {Resource} A new resource instance with the same data
    */
   clone(): Resource {
-    const clone = new Resource({
-      type: this.type,
-      id: this.id,
-      properties: { ...this.properties }
-    });
-
-    // Clone links
-    const links = this.getLinks();
-    for (const [rel, link] of Object.entries(links)) {
-      if (Array.isArray(link)) {
-        link.forEach(l => clone.addLink(rel, l.href, l.method, {
-          templated: l.templated,
-          title: l.title,
-          type: l.type,
-          hreflang: l.hreflang,
-          attrs: l.attrs
-        }));
-      } else {
-        clone.addLink(rel, link.href, link.method, {
-          templated: link.templated,
-          title: link.title,
-          type: link.type,
-          hreflang: link.hreflang,
-          attrs: link.attrs
-        });
-      }
+    const json = this.toJSON();
+    const { _type, _id, _links, _embedded, _state, ...properties } = json;
+    const clone = new Resource(
+      typeof _type === 'string' ? _type : undefined,
+      typeof _id === 'string' ? _id : undefined,
+      { properties: properties as Record<string, unknown> }
+    );
+    
+    // Restore links
+    if (_links) {
+      Object.entries(_links).forEach(([rel, link]) => {
+        if (Array.isArray(link)) {
+          link.forEach(l => clone.addLink(rel, l.href, l.method, {
+            templated: l.templated,
+            title: l.title,
+            type: l.type,
+            hreflang: l.hreflang,
+            attrs: l.attrs
+          }));
+        } else {
+          clone.addLink(rel, link.href, link.method, {
+            templated: link.templated,
+            title: link.title,
+            type: link.type,
+            hreflang: link.hreflang,
+            attrs: link.attrs
+          });
+        }
+      });
     }
 
-    // Clone embedded resources
-    const embedded = this.getEmbedded();
-    if (embedded) {
-      for (const [rel, resources] of Object.entries(embedded)) {
-        clone.embed(rel, resources.map((r: Resource) => r.clone()));
-      }
+    // Restore embedded resources
+    if (_embedded) {
+      Object.entries(_embedded).forEach(([rel, resources]) => {
+        if (Array.isArray(resources)) {
+          clone.embed(rel, resources.map(r => new Resource(
+            typeof r._type === 'string' ? r._type : undefined,
+            typeof r._id === 'string' ? r._id : undefined,
+            { properties: r as Record<string, unknown> }
+          )));
+        }
+      });
     }
 
-    // Clone state transitions
-    const transitions = this.getAvailableTransitions();
-    transitions.forEach(t => {
-      clone.addStateTransition(t.from, t.to, t.name, t.href, t.method, t.conditions);
-    });
+    // Restore state
+    if (typeof _state === 'string') {
+      clone.setState(_state);
+    }
 
     return clone;
   }
@@ -421,5 +430,13 @@ export class Resource {
     }
 
     return json;
+  }
+
+  /**
+   * Gets all available transitions for the current state
+   * @returns {StateTransition[]} Array of available transitions
+   */
+  getAvailableTransitions(): StateTransition[] {
+    return this.stateManager.getAvailableTransitions(this.getState(), this.getProperties());
   }
 } 

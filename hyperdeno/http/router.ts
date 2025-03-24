@@ -141,11 +141,13 @@ export class Router {
     
     const params: Record<string, string> = {};
     const paramNames = pattern.toString()
-      .match(/:[^/]+/g)
-      ?.map(name => name.slice(1)) || [];
+      .match(/\([^)]+\)/g)
+      ?.map(name => name.slice(1, -1)) || [];
     
-    paramNames.forEach((name, index) => {
-      params[name] = match[index + 1];
+    match.slice(1).forEach((value, index) => {
+      if (paramNames[index]) {
+        params[paramNames[index]] = value;
+      }
     });
     
     return params;
@@ -331,66 +333,33 @@ export class Router {
   }
 
   /**
-   * Handles an incoming request by matching it against registered routes
-   * @param {Request} request - The incoming request to handle
+   * Handles an incoming request
+   * @param {Request} request - The incoming request
    * @returns {Promise<Response>} The response to send
    */
   async handle(request: Request): Promise<Response> {
     try {
-      const method = request.method as HttpMethod;
       const url = new URL(request.url);
-      const pathname = url.pathname;
+      const path = url.pathname;
       
       // Find matching route
-      for (const route of this.#routes) {
-        if (route.method !== method && route.method !== '*') {
-          continue;
-        }
-        
-        const match = pathname.match(route.path);
-        if (!match) {
-          continue;
-        }
-        
-        // Parse path parameters
-        const params = this.#extractParams(route.path, pathname);
-        
-        // Create enhanced request with parsed data
-        const enhancedRequest = new Request(request.url, {
-          method: request.method,
-          headers: request.headers,
-          body: request.body,
-          mode: request.mode,
-          credentials: request.credentials,
-          cache: request.cache,
-          redirect: request.redirect,
-          referrer: request.referrer,
-          referrerPolicy: request.referrerPolicy,
-          integrity: request.integrity
-        });
-        
-        // Add params to request
-        Object.defineProperty(enhancedRequest, 'params', {
-          value: params,
-          writable: false
-        });
-        
-        // Handle the request
-        return await route.handler(enhancedRequest, params);
+      const route = this.#routes.find(r => 
+        (r.method === '*' || r.method === request.method) && 
+        r.path.test(path)
+      );
+      
+      if (!route) {
+        return this.#notFoundHandler!(request, {});
       }
       
-      // No matching route found
-      if (this.#notFoundHandler) {
-        return await this.#notFoundHandler(request, {});
-      }
-      
-      throw new NotFoundError(`Route not found: ${method} ${pathname}`);
+      // Extract parameters and call handler
+      const params = this.#extractParams(route.path, path);
+      return await route.handler(request, params);
     } catch (error) {
       if (this.#errorHandler) {
         return this.#errorHandler(error instanceof Error ? error : new Error(String(error)));
       }
-      
-      return createErrorResponse(error instanceof Error ? error : new Error(String(error)));
+      throw error;
     }
   }
 } 
