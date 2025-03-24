@@ -3,6 +3,25 @@
  * 
  * Handles content negotiation between client and server,
  * selecting the most appropriate renderer based on client preferences.
+ * 
+ * This class implements HTTP content negotiation as specified in RFC 7231,
+ * supporting both Accept headers and format query parameters.
+ * 
+ * @example
+ * ```typescript
+ * const negotiator = new ContentNegotiator({
+ *   defaultMediaType: 'application/json',
+ *   strict: false
+ * });
+ * 
+ * negotiator.addRenderers([
+ *   new JsonRenderer(),
+ *   new HtmlRenderer()
+ * ]);
+ * 
+ * // Later in request handling:
+ * const response = negotiator.render(request, resource);
+ * ```
  */
 
 import { Renderer } from './renderer.ts';
@@ -12,7 +31,10 @@ import { Resource } from '../core/resource.ts';
 import { Collection } from '../core/collection.ts';
 
 /**
- * Content negotiator options interface
+ * Options for configuring the content negotiator
+ * @interface ContentNegotiatorOptions
+ * @property {string} [defaultMediaType='application/json'] - The default media type to use when no match is found
+ * @property {boolean} [strict=false] - Whether to strictly enforce media type matching
  */
 export interface ContentNegotiatorOptions {
   defaultMediaType?: string;
@@ -20,15 +42,21 @@ export interface ContentNegotiatorOptions {
 }
 
 /**
- * Class responsible for content negotiation
+ * Class responsible for content negotiation between client and server
+ * 
+ * This class manages a collection of renderers and selects the most appropriate
+ * one based on the client's preferences expressed through HTTP headers and
+ * query parameters.
+ * 
+ * @class ContentNegotiator
  */
 export class ContentNegotiator {
   private renderers: Renderer[] = [];
   private options: Required<ContentNegotiatorOptions>;
   
   /**
-   * Create a new content negotiator
-   * @param options - Negotiator options
+   * Creates a new content negotiator instance
+   * @param {ContentNegotiatorOptions} [options] - Configuration options for the negotiator
    */
   constructor(options: ContentNegotiatorOptions = {}) {
     this.options = {
@@ -39,9 +67,10 @@ export class ContentNegotiator {
   }
   
   /**
-   * Add a renderer to the negotiator
-   * @param renderer - Renderer to add
-   * @returns For chaining
+   * Adds a single renderer to the negotiator
+   * @param {Renderer} renderer - The renderer to add
+   * @throws {Error} If renderer is not an instance of Renderer
+   * @returns {this} The negotiator instance for method chaining
    */
   addRenderer(renderer: Renderer): this {
     if (!(renderer instanceof Renderer)) {
@@ -53,9 +82,9 @@ export class ContentNegotiator {
   }
   
   /**
-   * Add multiple renderers
-   * @param renderers - Renderers to add
-   * @returns For chaining
+   * Adds multiple renderers to the negotiator
+   * @param {Renderer[]} renderers - Array of renderers to add
+   * @returns {this} The negotiator instance for method chaining
    */
   addRenderers(renderers: Renderer[]): this {
     for (const renderer of renderers) {
@@ -65,26 +94,32 @@ export class ContentNegotiator {
   }
   
   /**
-   * Get all registered renderers
-   * @returns Array of renderers
+   * Gets all registered renderers
+   * @returns {Renderer[]} A copy of the registered renderers array
    */
   getRenderers(): Renderer[] {
     return [...this.renderers];
   }
   
   /**
-   * Get available media types
-   * @returns Array of media types
+   * Gets the list of available media types from registered renderers
+   * @returns {string[]} Array of supported media types
    */
   getAvailableMediaTypes(): string[] {
     return this.renderers.map(renderer => renderer.getMediaType());
   }
   
   /**
-   * Negotiate the best renderer for a request
-   * @param request - Web standard Request
-   * @returns Selected renderer
-   * @throws {ContentNegotiationError} If no suitable renderer found
+   * Negotiates the best renderer for a given request
+   * 
+   * This method implements the content negotiation algorithm:
+   * 1. Checks for format query parameter
+   * 2. Parses and evaluates Accept header
+   * 3. Falls back to default media type if not strict
+   * 
+   * @param {Request} request - The incoming request to negotiate for
+   * @throws {ContentNegotiationError} If no suitable renderer is found
+   * @returns {Renderer} The selected renderer
    */
   negotiate(request: Request): Renderer {
     // Get Accept header
@@ -135,20 +170,20 @@ export class ContentNegotiator {
   }
   
   /**
-   * Find a renderer that can handle a media type
-   * @param mediaType - Media type to handle
-   * @returns Matching renderer or null
+   * Finds a renderer that can handle a specific media type
    * @private
+   * @param {string} mediaType - The media type to find a renderer for
+   * @returns {Renderer|null} The matching renderer or null if not found
    */
   #findRenderer(mediaType: string): Renderer | null {
     return this.renderers.find(renderer => renderer.canHandle(mediaType)) || null;
   }
   
   /**
-   * Get media type from format parameter
-   * @param format - Format value
-   * @returns Media type or null
+   * Converts a format parameter to its corresponding media type
    * @private
+   * @param {string} format - The format parameter value
+   * @returns {string|null} The corresponding media type or null if not found
    */
   #getMediaTypeFromFormat(format: string): string | null {
     const mediaType = MEDIA_TYPES[format.toUpperCase() as keyof typeof MEDIA_TYPES];
@@ -156,10 +191,10 @@ export class ContentNegotiator {
   }
   
   /**
-   * Parse Accept header
-   * @param acceptHeader - Accept header value
-   * @returns Array of accepted types with quality
+   * Parses an Accept header into an array of accepted types with quality factors
    * @private
+   * @param {string} acceptHeader - The Accept header value
+   * @returns {Array<{type: string, quality: number}>} Array of accepted types sorted by quality
    */
   #parseAcceptHeader(acceptHeader: string): Array<{ type: string; quality: number }> {
     return acceptHeader
@@ -185,10 +220,14 @@ export class ContentNegotiator {
   }
   
   /**
-   * Render a resource using the negotiated renderer
-   * @param request - Web standard Request
-   * @param resource - Resource to render
-   * @returns Web standard Response
+   * Renders a resource using the negotiated renderer
+   * 
+   * This is a convenience method that combines negotiation and rendering
+   * into a single step.
+   * 
+   * @param {Request} request - The incoming request
+   * @param {Resource|Collection} resource - The resource to render
+   * @returns {Response} The rendered response
    */
   render(request: Request, resource: Resource | Collection): Response {
     const renderer = this.negotiate(request);

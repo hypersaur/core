@@ -1,8 +1,22 @@
-
 /**
  * JSON Renderer
  * 
  * Renders resources as standard JSON.
+ * This renderer is the default for most API responses and provides
+ * a clean, standard JSON representation of resources and collections.
+ * 
+ * @example
+ * ```typescript
+ * const renderer = new JsonRenderer({ prettyPrint: true });
+ * 
+ * const resource = new Resource({
+ *   type: 'user',
+ *   properties: { name: 'John Doe' }
+ * });
+ * 
+ * const response = renderer.render(resource);
+ * // Response body: { "type": "user", "properties": { "name": "John Doe" } }
+ * ```
  */
 
 import { Renderer, RendererOptions } from './renderer.ts';
@@ -12,21 +26,26 @@ import { Resource } from '../core/resource.ts';
 import { Collection } from '../core/collection.ts';
 
 /**
- * JSON renderer options interface
+ * Options for configuring the JSON renderer
+ * @interface JsonRendererOptions
+ * @extends {RendererOptions}
+ * @property {boolean} [prettyPrint=false] - Whether to format the JSON output with indentation
  */
 export interface JsonRendererOptions extends RendererOptions {
   prettyPrint?: boolean;
 }
 
 /**
- * Renderer for standard JSON format
+ * Renderer class for converting resources to JSON format
+ * @class JsonRenderer
+ * @extends {Renderer}
  */
 export class JsonRenderer extends Renderer {
   private options: JsonRendererOptions;
 
   /**
-   * Create a new JSON renderer
-   * @param options - Renderer options
+   * Creates a new JSON renderer instance
+   * @param {JsonRendererOptions} [options] - Configuration options for the renderer
    */
   constructor(options: JsonRendererOptions = {}) {
     super();
@@ -37,26 +56,26 @@ export class JsonRenderer extends Renderer {
   }
   
   /**
-   * Get the media type this renderer produces
-   * @returns Media type
+   * Gets the media type that this renderer produces
+   * @returns {string} The media type (application/json)
    */
   override getMediaType(): string {
     return MEDIA_TYPES.JSON;
   }
   
   /**
-   * Check if this renderer can handle the requested media type
-   * @param mediaType - Requested media type
-   * @returns Whether this renderer can handle the media type
+   * Checks if this renderer can handle the requested media type
+   * @param {string} mediaType - The requested media type
+   * @returns {boolean} True if the renderer can handle the media type
    */
   override canHandle(mediaType: string): boolean {
     return mediaType === MEDIA_TYPES.JSON || mediaType === '*/*';
   }
   
   /**
-   * Render a resource to standard JSON
-   * @param resource - Resource to render
-   * @returns Web standard Response
+   * Renders a resource or collection to JSON format
+   * @param {Resource|Collection} resource - The resource or collection to render
+   * @returns {Response} A Response object containing the JSON representation
    */
   override render(resource: Resource | Collection): Response {
     // Get resource data
@@ -74,8 +93,8 @@ export class JsonRenderer extends Renderer {
   }
   
   /**
-   * Get renderer options
-   * @returns Renderer options
+   * Gets the current renderer options
+   * @returns {JsonRendererOptions} A copy of the renderer options
    */
   override getOptions(): JsonRendererOptions {
     return { ...this.options };

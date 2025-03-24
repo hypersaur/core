@@ -4,18 +4,47 @@
  * Represents an API resource with properties, links, and state transitions.
  * Follows the Single Responsibility Principle by focusing only on resource
  * representation, delegating link management to LinkManager.
+ * 
+ * @example
+ * ```typescript
+ * const resource = new Resource({
+ *   type: 'user',
+ *   id: '123',
+ *   properties: { name: 'John Doe' }
+ * });
+ * 
+ * resource.addLink('self', '/users/123');
+ * resource.addLink('edit', '/users/123/edit', 'PUT');
+ * ```
  */
 
 import { LinkManager, LinkObject, LinkOptions } from './link.ts';
 import { ResourceState } from './state.ts';
 import { InvalidArgumentError } from './errors.ts';
 
+/**
+ * Options for creating a new Resource instance
+ * @interface ResourceOptions
+ * @property {string} [type] - The type of the resource (e.g., 'user', 'post')
+ * @property {string} [id] - The unique identifier of the resource
+ * @property {Record<string, unknown>} [properties] - The resource's properties
+ */
 export interface ResourceOptions {
   type?: string;
   id?: string;
   properties?: Record<string, unknown>;
 }
 
+/**
+ * Represents a state transition in the resource's state machine
+ * @interface StateTransition
+ * @property {string} from - The source state
+ * @property {string} to - The target state
+ * @property {string} name - The name of the transition
+ * @property {string} href - The URI for the transition
+ * @property {string} [method] - The HTTP method for the transition (defaults to 'POST')
+ * @property {Record<string, unknown>} [conditions] - Conditions that must be met for the transition
+ */
 export interface StateTransition {
   from: string;
   to: string;
@@ -25,6 +54,10 @@ export interface StateTransition {
   conditions?: Record<string, unknown>;
 }
 
+/**
+ * Main Resource class implementing HATEOAS principles
+ * @class Resource
+ */
 export class Resource {
   private type = '';
   private id = '';
@@ -34,8 +67,8 @@ export class Resource {
   private embedded: Record<string, Resource[]> = {};
 
   /**
-   * Create a new resource
-   * @param options - Resource options
+   * Creates a new Resource instance
+   * @param {ResourceOptions} options - Configuration options for the resource
    */
   constructor(options: ResourceOptions = {}) {
     this.linkManager = new LinkManager();
@@ -47,9 +80,10 @@ export class Resource {
   }
 
   /**
-   * Set the resource type
-   * @param type - Resource type
-   * @returns The resource instance for chaining
+   * Sets the type of the resource
+   * @param {string} type - The resource type
+   * @throws {InvalidArgumentError} If type is not a string
+   * @returns {Resource} The resource instance for method chaining
    */
   setType(type: string): Resource {
     if (typeof type !== 'string') {
@@ -60,17 +94,18 @@ export class Resource {
   }
 
   /**
-   * Get the resource type
-   * @returns The resource type
+   * Gets the type of the resource
+   * @returns {string} The resource type
    */
   getType(): string {
     return this.type;
   }
 
   /**
-   * Set the resource ID
-   * @param id - Resource ID
-   * @returns The resource instance for chaining
+   * Sets the unique identifier of the resource
+   * @param {string|number} id - The resource ID
+   * @throws {InvalidArgumentError} If id is not a string or number
+   * @returns {Resource} The resource instance for method chaining
    */
   setId(id: string | number): Resource {
     if (typeof id !== 'string' && typeof id !== 'number') {
@@ -81,18 +116,19 @@ export class Resource {
   }
 
   /**
-   * Get the resource ID
-   * @returns The resource ID
+   * Gets the unique identifier of the resource
+   * @returns {string} The resource ID
    */
   getId(): string {
     return this.id;
   }
 
   /**
-   * Set a resource property
-   * @param key - Property name
-   * @param value - Property value
-   * @returns The resource instance for chaining
+   * Sets a single property on the resource
+   * @param {string} key - The property name
+   * @param {unknown} value - The property value
+   * @throws {InvalidArgumentError} If key is not a string
+   * @returns {Resource} The resource instance for method chaining
    */
   setProperty(key: string, value: unknown): Resource {
     if (typeof key !== 'string') {
@@ -103,9 +139,10 @@ export class Resource {
   }
 
   /**
-   * Set multiple properties at once
-   * @param properties - Properties object
-   * @returns The resource instance for chaining
+   * Sets multiple properties on the resource at once
+   * @param {Record<string, unknown>} properties - Object containing properties to set
+   * @throws {InvalidArgumentError} If properties is not an object
+   * @returns {Resource} The resource instance for method chaining
    */
   setProperties(properties: Record<string, unknown>): Resource {
     if (typeof properties !== 'object' || properties === null) {
@@ -120,29 +157,29 @@ export class Resource {
   }
 
   /**
-   * Get a resource property
-   * @param key - Property name
-   * @returns The property value or undefined if not found
+   * Gets a property value by key
+   * @param {string} key - The property name
+   * @returns {unknown} The property value or undefined if not found
    */
   getProperty(key: string): unknown {
     return this.properties[key];
   }
 
   /**
-   * Get all resource properties
-   * @returns All properties
+   * Gets all properties of the resource
+   * @returns {Record<string, unknown>} A copy of all properties
    */
   getProperties(): Record<string, unknown> {
     return { ...this.properties };
   }
 
   /**
-   * Add a link to the resource
-   * @param rel - Link relation
-   * @param href - Link URI
-   * @param method - HTTP method
-   * @param options - Additional link options
-   * @returns The resource instance for chaining
+   * Adds a link to the resource
+   * @param {string} rel - The link relation (e.g., 'self', 'edit')
+   * @param {string} href - The link URI
+   * @param {string} [method='GET'] - The HTTP method for the link
+   * @param {LinkOptions} [options] - Additional link options
+   * @returns {Resource} The resource instance for method chaining
    */
   addLink(rel: string, href: string, method: string = 'GET', options: LinkOptions = {}): Resource {
     this.linkManager.addLink(rel, href, method, options);
@@ -150,12 +187,12 @@ export class Resource {
   }
 
   /**
-   * Add a templated link (URI Template) to the resource
-   * @param rel - Link relation
-   * @param template - URI template
-   * @param method - HTTP method
-   * @param options - Additional link options
-   * @returns The resource instance for chaining
+   * Adds a templated link (URI Template) to the resource
+   * @param {string} rel - The link relation
+   * @param {string} template - The URI template
+   * @param {string} [method='GET'] - The HTTP method for the link
+   * @param {LinkOptions} [options] - Additional link options
+   * @returns {Resource} The resource instance for method chaining
    */
   addTemplatedLink(rel: string, template: string, method: string = 'GET', options: LinkOptions = {}): Resource {
     this.linkManager.addLink(rel, template, method, { ...options, templated: true });
@@ -163,17 +200,17 @@ export class Resource {
   }
 
   /**
-   * Get a link by relation
-   * @param rel - Link relation
-   * @returns The link, links array, or undefined if not found
+   * Gets a link by its relation
+   * @param {string} rel - The link relation
+   * @returns {LinkObject|undefined} The link object or undefined if not found
    */
   getLink(rel: string): LinkObject | undefined {
     return this.linkManager.getLink(rel);
   }
 
   /**
-   * Get the self link href
-   * @returns The self link href or undefined if not found
+   * Gets the self link URI
+   * @returns {string|undefined} The self link URI or undefined if not found
    */
   getSelfLink(): string | undefined {
     const selfLink = this.getLink('self');
@@ -185,26 +222,26 @@ export class Resource {
   }
 
   /**
-   * Get all links
-   * @returns All links grouped by relation
+   * Gets all links associated with the resource
+   * @returns {Record<string, LinkObject>} All links grouped by relation
    */
   getLinks(): Record<string, LinkObject> {
     return this.linkManager.getLinks();
   }
 
   /**
-   * Check if a link relation exists
-   * @param rel - Link relation
-   * @returns True if the relation exists
+   * Checks if a link relation exists
+   * @param {string} rel - The link relation to check
+   * @returns {boolean} True if the relation exists
    */
   hasLink(rel: string): boolean {
     return this.linkManager.hasLink(rel);
   }
 
   /**
-   * Remove a link by relation
-   * @param rel - Link relation
-   * @returns The resource instance for chaining
+   * Removes a link by its relation
+   * @param {string} rel - The link relation to remove
+   * @returns {Resource} The resource instance for method chaining
    */
   removeLink(rel: string): Resource {
     this.linkManager.removeLink(rel);
@@ -212,10 +249,10 @@ export class Resource {
   }
 
   /**
-   * Embed a related resource
-   * @param rel - Relation to the parent resource
-   * @param resource - Resource(s) to embed
-   * @returns The resource instance for chaining
+   * Embeds a related resource or array of resources
+   * @param {string} rel - The relation to the parent resource
+   * @param {Resource|Resource[]} resource - The resource(s) to embed
+   * @returns {Resource} The resource instance for method chaining
    */
   embed(rel: string, resource: Resource | Resource[]): Resource {
     if (!this.embedded[rel]) {
@@ -232,9 +269,9 @@ export class Resource {
   }
 
   /**
-   * Get embedded resources
-   * @param rel - Optional relation to retrieve specific embedded resources
-   * @returns Embedded resources
+   * Gets embedded resources
+   * @param {string} [rel] - Optional relation to retrieve specific embedded resources
+   * @returns {Record<string, Resource[]>|Resource[]|undefined} The embedded resources
    */
   getEmbedded(rel?: string): Record<string, Resource[]> | Resource[] | undefined {
     if (rel) {
@@ -245,18 +282,18 @@ export class Resource {
   }
 
   /**
-   * Check if the resource has embedded resources with a relation
-   * @param rel - Relation to check
-   * @returns True if the resource has embedded resources with the relation
+   * Checks if the resource has embedded resources with a specific relation
+   * @param {string} rel - The relation to check
+   * @returns {boolean} True if embedded resources exist with the relation
    */
   hasEmbedded(rel: string): boolean {
     return !!this.embedded[rel] && this.embedded[rel].length > 0;
   }
 
   /**
-   * Set the resource state
-   * @param state - The new state
-   * @returns The resource instance for chaining
+   * Sets the current state of the resource
+   * @param {string} state - The new state
+   * @returns {Resource} The resource instance for method chaining
    */
   setState(state: string): Resource {
     this.stateManager.setState(state);
@@ -264,22 +301,22 @@ export class Resource {
   }
 
   /**
-   * Get the current resource state
-   * @returns The current state
+   * Gets the current state of the resource
+   * @returns {string} The current state
    */
   getState(): string {
     return this.stateManager.getState();
   }
 
   /**
-   * Add a state transition
-   * @param from - Starting state
-   * @param to - Target state
-   * @param name - Transition name
-   * @param href - Transition URI
-   * @param method - HTTP method
-   * @param conditions - Transition conditions
-   * @returns The resource instance for chaining
+   * Adds a state transition to the resource
+   * @param {string} from - The source state
+   * @param {string} to - The target state
+   * @param {string} name - The transition name
+   * @param {string} href - The transition URI
+   * @param {string} [method='POST'] - The HTTP method for the transition
+   * @param {Record<string, unknown>} [conditions] - Conditions for the transition
+   * @returns {Resource} The resource instance for method chaining
    */
   addStateTransition(from: string, to: string, name: string, href: string, method: string = 'POST', conditions?: Record<string, unknown>): Resource {
     this.stateManager.addTransition(from, to, name, href, method, conditions);
@@ -287,17 +324,17 @@ export class Resource {
   }
 
   /**
-   * Get available state transitions
-   * @returns Available transitions
+   * Gets all available state transitions
+   * @returns {StateTransition[]} Array of available transitions
    */
   getAvailableTransitions(): StateTransition[] {
     return this.stateManager.getAvailableTransitions(this.getState(), this.getProperties());
   }
 
   /**
-   * Apply a state transition
-   * @param transitionName - Name of the transition to apply
-   * @returns The resource instance for chaining
+   * Applies a state transition by name
+   * @param {string} transitionName - The name of the transition to apply
+   * @returns {Resource} The resource instance for method chaining
    */
   applyTransition(transitionName: string): Resource {
     const newState = this.stateManager.applyTransition(this.getState(), transitionName, this.getProperties());
@@ -306,8 +343,8 @@ export class Resource {
   }
 
   /**
-   * Create a deep copy of the resource
-   * @returns A new resource instance
+   * Creates a deep copy of the resource
+   * @returns {Resource} A new resource instance with the same data
    */
   clone(): Resource {
     const clone = new Resource({
@@ -356,8 +393,8 @@ export class Resource {
   }
 
   /**
-   * Convert the resource to a JSON object
-   * @returns JSON representation of the resource
+   * Converts the resource to a JSON object
+   * @returns {Record<string, unknown>} The resource as a JSON object
    */
   toJSON(): Record<string, unknown> {
     const json: Record<string, unknown> = {

@@ -2,6 +2,23 @@
  * HTML Renderer
  * 
  * Renders resources as HTML with a clean, semantic structure.
+ * This renderer provides a human-readable HTML representation of resources
+ * and collections, with built-in styling and support for custom templates.
+ * 
+ * @example
+ * ```typescript
+ * const renderer = new HtmlRenderer({
+ *   prettyPrint: true,
+ *   template: '<div class="resource">{{type}}</div>'
+ * });
+ * 
+ * const resource = new Resource({
+ *   type: 'user',
+ *   properties: { name: 'John Doe' }
+ * });
+ * 
+ * const response = renderer.render(resource);
+ * ```
  */
 
 import { Renderer, RendererOptions } from './renderer.ts';
@@ -11,7 +28,11 @@ import { Resource } from '../core/resource.ts';
 import { Collection } from '../core/collection.ts';
 
 /**
- * HTML renderer options interface
+ * Options for configuring the HTML renderer
+ * @interface HtmlRendererOptions
+ * @extends {RendererOptions}
+ * @property {boolean} [prettyPrint=false] - Whether to format the HTML output with indentation
+ * @property {string} [template=''] - Custom HTML template with {{variable}} placeholders
  */
 export interface HtmlRendererOptions extends RendererOptions {
   prettyPrint?: boolean;
@@ -19,14 +40,16 @@ export interface HtmlRendererOptions extends RendererOptions {
 }
 
 /**
- * Renderer for HTML format
+ * Renderer class for converting resources to HTML format
+ * @class HtmlRenderer
+ * @extends {Renderer}
  */
 export class HtmlRenderer extends Renderer {
   private options: HtmlRendererOptions;
 
   /**
-   * Create a new HTML renderer
-   * @param options - Renderer options
+   * Creates a new HTML renderer instance
+   * @param {HtmlRendererOptions} [options] - Configuration options for the renderer
    */
   constructor(options: HtmlRendererOptions = {}) {
     super();
@@ -38,26 +61,26 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Get the media type this renderer produces
-   * @returns Media type
+   * Gets the media type that this renderer produces
+   * @returns {string} The media type (text/html)
    */
   override getMediaType(): string {
     return MEDIA_TYPES.HTML;
   }
   
   /**
-   * Check if this renderer can handle the requested media type
-   * @param mediaType - Requested media type
-   * @returns Whether this renderer can handle the media type
+   * Checks if this renderer can handle the requested media type
+   * @param {string} mediaType - The requested media type
+   * @returns {boolean} True if the renderer can handle the media type
    */
   override canHandle(mediaType: string): boolean {
     return mediaType === MEDIA_TYPES.HTML || mediaType === '*/*';
   }
   
   /**
-   * Render a resource to HTML
-   * @param resource - Resource to render
-   * @returns Web standard Response
+   * Renders a resource or collection to HTML format
+   * @param {Resource|Collection} resource - The resource or collection to render
+   * @returns {Response} A Response object containing the HTML representation
    */
   override render(resource: Resource | Collection): Response {
     // Get resource data
@@ -75,10 +98,10 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Generate HTML from resource data
-   * @param data - Resource data
-   * @returns HTML string
+   * Generates HTML from resource data
    * @private
+   * @param {Record<string, unknown>} data - The resource data to render
+   * @returns {string} The generated HTML string
    */
   #generateHtml(data: Record<string, unknown>): string {
     // Use custom template if provided
@@ -158,10 +181,10 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Apply custom template to data
-   * @param data - Resource data
-   * @returns HTML string
+   * Applies a custom template to resource data
    * @private
+   * @param {Record<string, unknown>} data - The resource data to apply to the template
+   * @returns {string} The rendered HTML string
    */
   #applyTemplate(data: Record<string, unknown>): string {
     let html = this.options.template || '';
@@ -176,10 +199,10 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Format a value for HTML output
-   * @param value - Value to format
-   * @returns Formatted string
+   * Formats a value for HTML output
    * @private
+   * @param {unknown} value - The value to format
+   * @returns {string} The formatted string
    */
   #formatValue(value: unknown): string {
     if (value === null) return 'null';
@@ -189,10 +212,10 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Escape HTML special characters
-   * @param str - String to escape
-   * @returns Escaped string
+   * Escapes HTML special characters in a string
    * @private
+   * @param {string} str - The string to escape
+   * @returns {string} The escaped string
    */
   #escapeHtml(str: string): string {
     return str
@@ -204,8 +227,8 @@ export class HtmlRenderer extends Renderer {
   }
   
   /**
-   * Get renderer options
-   * @returns Renderer options
+   * Gets the current renderer options
+   * @returns {HtmlRendererOptions} A copy of the renderer options
    */
   override getOptions(): HtmlRendererOptions {
     return { ...this.options };
