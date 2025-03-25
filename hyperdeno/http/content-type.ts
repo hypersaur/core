@@ -1,13 +1,35 @@
 /**
- * Content type handling for HATEOAS API
+ * 🎨 Content Type Handling for HATEOAS API
  * 
- * Provides utilities for handling content negotiation and media types.
+ * This module provides utilities for handling content negotiation and media types
+ * in a HATEOAS API. It ensures that resources are served in the most appropriate
+ * format based on client preferences and HATEOAS principles.
+ * 
+ * Key features:
+ * - Content negotiation support
+ * - Multiple representation formats
+ * - Quality-based media type selection
+ * - Format query parameter support
+ * 
+ * @example
+ * ```typescript
+ * const mediaType = negotiateContentType(request, [
+ *   MEDIA_TYPES.HAL_JSON,
+ *   MEDIA_TYPES.JSON,
+ *   MEDIA_TYPES.HTML
+ * ]);
+ * ```
  */
 
 import { ContentNegotiationError } from '../core/errors.ts';
 
 /**
- * Standard media types used in the framework
+ * 📋 Standard media types used in the framework
+ * 
+ * Defines the supported media types for resource representations,
+ * including HATEOAS-specific formats like HAL+JSON.
+ * 
+ * @constant {Object} MEDIA_TYPES
  */
 export const MEDIA_TYPES = {
   JSON: 'application/json',
@@ -19,7 +41,12 @@ export const MEDIA_TYPES = {
 } as const;
 
 /**
- * Format to media type mapping for format query parameter
+ * 🔄 Format to media type mapping for format query parameter
+ * 
+ * Maps simple format names to their corresponding media types,
+ * enabling clients to request specific formats via query parameters.
+ * 
+ * @constant {Object} FORMAT_MAP
  */
 export const FORMAT_MAP = {
   'json': MEDIA_TYPES.JSON,
@@ -33,15 +60,30 @@ export const FORMAT_MAP = {
 export type MediaType = typeof MEDIA_TYPES[keyof typeof MEDIA_TYPES];
 export type Format = keyof typeof FORMAT_MAP;
 
+/**
+ * ⚖️ Content type preference interface
+ * 
+ * Represents a content type preference with its associated quality factor,
+ * used for content negotiation and media type selection.
+ * 
+ * @interface ContentTypePreference
+ * @property {string} type - The media type
+ * @property {number} quality - The quality factor (0-1)
+ */
 interface ContentTypePreference {
   type: string;
   quality: number;
 }
 
 /**
- * Parse Accept header to get content type preferences
- * @param acceptHeader - Accept header value
- * @returns Sorted content types by quality
+ * 🔍 Parse Accept header to get content type preferences
+ * 
+ * Parses the Accept header to determine the client's preferred
+ * content types and their quality factors, enabling proper
+ * content negotiation.
+ * 
+ * @param {string | null} acceptHeader - Accept header value
+ * @returns {ContentTypePreference[]} Sorted content types by quality
  */
 export function parseAcceptHeader(acceptHeader: string | null): ContentTypePreference[] {
   if (!acceptHeader) {
@@ -71,10 +113,15 @@ export function parseAcceptHeader(acceptHeader: string | null): ContentTypePrefe
 }
 
 /**
- * Get the best matching media type
- * @param acceptHeader - Accept header
- * @param available - Available media types
- * @returns Best matching media type or null if none
+ * 🎯 Get the best matching media type
+ * 
+ * Determines the most appropriate media type based on the client's
+ * Accept header and available media types, following content
+ * negotiation rules.
+ * 
+ * @param {string | null} acceptHeader - Accept header
+ * @param {MediaType[]} available - Available media types
+ * @returns {MediaType | null} Best matching media type or null if none
  */
 export function getBestMatch(acceptHeader: string | null, available: MediaType[]): MediaType | null {
   const accepted = parseAcceptHeader(acceptHeader);
@@ -106,19 +153,28 @@ export function getBestMatch(acceptHeader: string | null, available: MediaType[]
 }
 
 /**
- * Get media type from format query parameter
- * @param format - Format value
- * @returns Media type or null if unknown format
+ * 🔄 Get media type from format query parameter
+ * 
+ * Converts a format query parameter to its corresponding media type,
+ * enabling clients to request specific formats via URL parameters.
+ * 
+ * @param {string} format - Format value
+ * @returns {MediaType | null} Media type or null if unknown format
  */
 export function getMediaTypeFromFormat(format: string): MediaType | null {
   return FORMAT_MAP[format.toLowerCase() as Format] || null;
 }
 
 /**
- * Middleware to handle content negotiation
- * @param request - Web standard Request
- * @param available - Available media types
- * @returns Selected media type
+ * 🤝 Middleware to handle content negotiation
+ * 
+ * Implements content negotiation based on the Accept header and
+ * format query parameter, ensuring clients receive resources in
+ * their preferred format while maintaining HATEOAS principles.
+ * 
+ * @param {Request} request - Web standard Request
+ * @param {MediaType[]} available - Available media types
+ * @returns {MediaType} Selected media type
  * @throws {ContentNegotiationError} If no acceptable media type
  */
 export function negotiateContentType(request: Request, available: MediaType[]): MediaType {

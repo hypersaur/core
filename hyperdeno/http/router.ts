@@ -1,8 +1,17 @@
 /**
- * Router for HATEOAS API
+ * 🛣️ Router for HATEOAS API
  * 
  * A web standard router that provides RESTful routing capabilities
  * based on the native Request/Response objects without external dependencies.
+ * It supports HATEOAS principles by enabling resource-based routing and
+ * proper HTTP method handling.
+ * 
+ * Key features:
+ * - RESTful routing
+ * - Resource-based endpoints
+ * - HTTP method support
+ * - Path parameter extraction
+ * - Error handling
  * 
  * @example
  * ```typescript
@@ -26,7 +35,11 @@ import { NotFoundError } from "../core/errors.ts";
 import { createErrorResponse } from "./response.ts";
 
 /**
- * HTTP methods supported by the router
+ * 🌐 HTTP methods supported by the router
+ * 
+ * Defines the standard HTTP methods supported by the router,
+ * following RESTful conventions for HATEOAS APIs.
+ * 
  * @constant {Object}
  */
 export const HTTP_METHODS = {
@@ -40,13 +53,21 @@ export const HTTP_METHODS = {
 } as const;
 
 /**
- * Type representing supported HTTP methods
+ * 📝 Type representing supported HTTP methods
+ * 
+ * Type definition for the HTTP methods supported by the router,
+ * ensuring type safety in route definitions.
+ * 
  * @typedef {typeof HTTP_METHODS[keyof typeof HTTP_METHODS]} HttpMethod
  */
 export type HttpMethod = typeof HTTP_METHODS[keyof typeof HTTP_METHODS];
 
 /**
- * Type definition for route handler functions
+ * 🎯 Type definition for route handler functions
+ * 
+ * Defines the structure of route handler functions that process
+ * incoming requests and return responses in a HATEOAS context.
+ * 
  * @typedef {Function} RouteHandler
  * @param {Request} request - The incoming request object
  * @param {Record<string, string>} params - URL parameters extracted from the path
@@ -55,7 +76,12 @@ export type HttpMethod = typeof HTTP_METHODS[keyof typeof HTTP_METHODS];
 export type RouteHandler = (request: Request, params: Record<string, string>) => Promise<Response> | Response;
 
 /**
- * Interface defining handlers for RESTful resource operations
+ * 📦 Interface defining handlers for RESTful resource operations
+ * 
+ * Defines the standard set of handlers for RESTful resource
+ * operations, following HATEOAS principles for resource
+ * manipulation.
+ * 
  * @interface ResourceHandlers
  * @property {RouteHandler} [list] - Handler for GET /resource (list all)
  * @property {RouteHandler} [get] - Handler for GET /resource/:id (get one)
@@ -74,7 +100,11 @@ export interface ResourceHandlers {
 }
 
 /**
- * Internal interface for route definitions
+ * 🔧 Internal interface for route definitions
+ * 
+ * Defines the internal structure of route definitions,
+ * including method, path pattern, and handler function.
+ * 
  * @interface Route
  * @property {HttpMethod|'*'} method - The HTTP method or '*' for all methods
  * @property {RegExp} path - The route path pattern
@@ -87,7 +117,12 @@ interface Route {
 }
 
 /**
- * Router class for handling API requests
+ * 🎮 Router class for handling API requests
+ * 
+ * Main router class that manages route definitions and request
+ * handling, supporting HATEOAS principles through proper
+ * resource routing and error handling.
+ * 
  * @class Router
  */
 export class Router {
@@ -96,7 +131,10 @@ export class Router {
   #errorHandler: ((error: Error) => Response) | null = null;
   
   /**
-   * Creates a new Router instance with default handlers
+   * 🏗️ Creates a new Router instance with default handlers
+   * 
+   * Initializes a new router with default handlers for
+   * 404 Not Found and error responses.
    */
   constructor() {
     // Set default not found handler
@@ -111,7 +149,11 @@ export class Router {
   }
   
   /**
-   * Converts a path string to a RegExp pattern
+   * 🔄 Converts a path string to a RegExp pattern
+   * 
+   * Converts URL path patterns with parameters to RegExp
+   * patterns for route matching.
+   * 
    * @private
    * @param {string} path - The URL path pattern
    * @returns {RegExp} The compiled RegExp pattern
@@ -128,7 +170,11 @@ export class Router {
   }
   
   /**
-   * Extracts path parameters from a URL based on a route pattern
+   * 🔍 Extracts path parameters from a URL based on a route pattern
+   * 
+   * Extracts named parameters from URL paths based on
+   * route patterns for use in handlers.
+   * 
    * @private
    * @param {RegExp} pattern - The route pattern
    * @param {string} path - The actual URL path
@@ -143,7 +189,11 @@ export class Router {
   }
   
   /**
-   * Adds a route to the router
+   * ➕ Adds a route to the router
+   * 
+   * Adds a new route definition with method, path pattern,
+   * and handler function.
+   * 
    * @param {HttpMethod|'*'} method - The HTTP method or '*' for all methods
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
@@ -174,7 +224,11 @@ export class Router {
   }
   
   /**
-   * Adds a GET route
+   * 📥 Adds a GET route
+   * 
+   * Adds a route handler for GET requests, typically used
+   * for retrieving resources.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -184,7 +238,11 @@ export class Router {
   }
   
   /**
-   * Adds a POST route
+   * 📤 Adds a POST route
+   * 
+   * Adds a route handler for POST requests, typically used
+   * for creating new resources.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -194,7 +252,11 @@ export class Router {
   }
   
   /**
-   * Adds a PUT route
+   * 🔄 Adds a PUT route
+   * 
+   * Adds a route handler for PUT requests, typically used
+   * for replacing entire resources.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -204,7 +266,11 @@ export class Router {
   }
   
   /**
-   * Adds a PATCH route
+   * ✏️ Adds a PATCH route
+   * 
+   * Adds a route handler for PATCH requests, typically used
+   * for partial resource updates.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -214,7 +280,11 @@ export class Router {
   }
   
   /**
-   * Adds a DELETE route
+   * 🗑️ Adds a DELETE route
+   * 
+   * Adds a route handler for DELETE requests, typically used
+   * for removing resources.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -224,7 +294,11 @@ export class Router {
   }
   
   /**
-   * Adds an OPTIONS route
+   * ℹ️ Adds an OPTIONS route
+   * 
+   * Adds a route handler for OPTIONS requests, typically used
+   * for CORS preflight requests.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -234,7 +308,11 @@ export class Router {
   }
   
   /**
-   * Adds a HEAD route
+   * 👁️ Adds a HEAD route
+   * 
+   * Adds a route handler for HEAD requests, typically used
+   * for retrieving resource metadata.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
@@ -244,85 +322,97 @@ export class Router {
   }
   
   /**
-   * Adds a route handler for all HTTP methods on a path
+   * 🌟 Adds a route handler for all HTTP methods
+   * 
+   * Adds a route handler that responds to all HTTP methods
+   * on a given path.
+   * 
    * @param {string|RegExp} path - The URL path pattern
    * @param {RouteHandler} handler - The request handler function
    * @returns {this} The router instance for method chaining
    */
   all(path: string | RegExp, handler: RouteHandler): this {
-    Object.values(HTTP_METHODS).forEach(method => {
-      this.route(method, path, handler);
-    });
-    return this;
+    return this.route('*', path, handler);
   }
   
   /**
-   * Sets a custom handler for 404 Not Found responses
-   * @param {RouteHandler} handler - The not found handler function
-   * @throws {Error} If handler is not a function
+   * ⚠️ Sets a custom 404 Not Found handler
+   * 
+   * Sets a custom handler for requests that don't match
+   * any defined routes.
+   * 
+   * @param {RouteHandler} handler - The custom 404 handler
    * @returns {this} The router instance for method chaining
    */
   setNotFoundHandler(handler: RouteHandler): this {
-    if (typeof handler !== 'function') {
-      throw new Error('Not found handler must be a function');
-    }
     this.#notFoundHandler = handler;
     return this;
   }
   
   /**
-   * Sets a custom handler for error responses
-   * @param {(error: Error) => Response} handler - The error handler function
-   * @throws {Error} If handler is not a function
+   * 🚨 Sets a custom error handler
+   * 
+   * Sets a custom handler for processing errors that occur
+   * during request handling.
+   * 
+   * @param {Function} handler - The custom error handler
    * @returns {this} The router instance for method chaining
    */
   setErrorHandler(handler: (error: Error) => Response): this {
-    if (typeof handler !== 'function') {
-      throw new Error('Error handler must be a function');
-    }
     this.#errorHandler = handler;
     return this;
   }
-
+  
   /**
-   * Registers RESTful resource handlers for a base path
+   * 📦 Registers RESTful resource handlers
+   * 
+   * Registers a set of handlers for a RESTful resource,
+   * following HATEOAS principles for resource manipulation.
+   * 
    * @param {string} basePath - The base path for the resource
-   * @param {ResourceHandlers} handlers - The resource operation handlers
+   * @param {ResourceHandlers} handlers - The resource handlers
    * @returns {this} The router instance for method chaining
    */
   resource(basePath: string, handlers: ResourceHandlers): this {
-    const path = basePath.endsWith('/') ? basePath.slice(0, -1) : basePath;
-    const itemPath = `${path}/:id`;
-    
+    // List all resources
     if (handlers.list) {
-      this.get(path, handlers.list);
+      this.get(basePath, handlers.list);
     }
     
+    // Get a single resource
     if (handlers.get) {
-      this.get(itemPath, handlers.get);
+      this.get(`${basePath}/:id`, handlers.get);
     }
     
+    // Create a new resource
     if (handlers.create) {
-      this.post(path, handlers.create);
+      this.post(basePath, handlers.create);
     }
     
+    // Update a resource
     if (handlers.update) {
-      this.put(itemPath, handlers.update);
+      this.put(`${basePath}/:id`, handlers.update);
     }
     
+    // Partially update a resource
     if (handlers.patch) {
-      this.patch(itemPath, handlers.patch);
+      this.patch(`${basePath}/:id`, handlers.patch);
     }
     
+    // Delete a resource
     if (handlers.delete) {
-      this.delete(itemPath, handlers.delete);
+      this.delete(`${basePath}/:id`, handlers.delete);
     }
     
     return this;
   }
-
+  
   /**
-   * Handles an incoming request
+   * 🎯 Handles an incoming request
+   * 
+   * Processes an incoming request by matching it against
+   * defined routes and executing the appropriate handler.
+   * 
    * @param {Request} request - The incoming request
    * @returns {Promise<Response>} The response to send
    */
@@ -332,25 +422,27 @@ export class Router {
       const path = url.pathname;
       
       // Find matching route
-      const route = this.#routes.find(r => 
-        (r.method === '*' || r.method === request.method) && 
-        r.path.test(path)
-      );
-      
-      if (!route) {
-        const _error = new NotFoundError(`Route not found: ${request.method} ${request.url}`);
-        return this.#notFoundHandler!(request, {});
+      for (const route of this.#routes) {
+        if (route.method === '*' || route.method === request.method) {
+          const match = path.match(route.path);
+          if (match) {
+            const params = this.#extractParams(route.path, path);
+            return await route.handler(request, params);
+          }
+        }
       }
       
-      // Extract parameters and call handler
-      const params = this.#extractParams(route.path, path);
-      const response = await route.handler(request, params);
-      return response;
+      // No matching route found
+      if (this.#notFoundHandler) {
+        return await this.#notFoundHandler(request, {});
+      }
+      
+      throw new NotFoundError(`Route not found: ${request.method} ${request.url}`);
     } catch (error) {
-      if (error instanceof Error) {
-        return this.#errorHandler!(error);
+      if (this.#errorHandler) {
+        return this.#errorHandler(error as Error);
       }
-      return this.#errorHandler!(new Error(String(error)));
+      throw error;
     }
   }
 } 

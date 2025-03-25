@@ -1,8 +1,23 @@
 /**
- * Response utilities for HATEOAS API
+ * 📤 Response Utilities for HATEOAS API
  * 
- * Helper functions for creating web standard Response objects
- * with proper content types and status codes.
+ * This module provides helper functions for creating web standard Response
+ * objects in a HATEOAS context. It ensures that responses include proper
+ * content types, status codes, and HATEOAS-specific headers.
+ * 
+ * Key features:
+ * - Multiple response formats
+ * - HATEOAS headers
+ * - Error handling
+ * - Content negotiation
+ * 
+ * @example
+ * ```typescript
+ * const response = createResponse(resource, {
+ *   status: 200,
+ *   headers: { 'Cache-Control': 'no-cache' }
+ * });
+ * ```
  */
 
 import { Resource } from '../core/resource.ts';
@@ -10,7 +25,14 @@ import { Collection } from '../core/collection.ts';
 import { NotFoundError } from '../core/errors.ts';
 
 /**
- * Response options interface
+ * ⚙️ Response options interface
+ * 
+ * Defines options for customizing response behavior, including
+ * status codes and headers.
+ * 
+ * @interface ResponseOptions
+ * @property {number} [status] - HTTP status code
+ * @property {Record<string, string>} [headers] - Response headers
  */
 export interface ResponseOptions {
   status?: number;
@@ -18,10 +40,14 @@ export interface ResponseOptions {
 }
 
 /**
- * Create a response with appropriate content type and status
- * @param data - Response data
- * @param options - Response options
- * @returns Web standard Response
+ * 🎯 Create a response with appropriate content type and status
+ * 
+ * Creates a response with the appropriate content type and status
+ * code based on the data type and HATEOAS principles.
+ * 
+ * @param {unknown} data - Response data
+ * @param {ResponseOptions} [options] - Response options
+ * @returns {Response} Web standard Response
  */
 export function createResponse(data: unknown, options: ResponseOptions = {}): Response {
   // Default response options
@@ -64,10 +90,14 @@ export function createResponse(data: unknown, options: ResponseOptions = {}): Re
 }
 
 /**
- * Create a JSON response
- * @param data - JSON data
- * @param options - Response options
- * @returns Web standard Response
+ * 📦 Create a JSON response
+ * 
+ * Creates a response with JSON content type and properly
+ * formatted JSON data.
+ * 
+ * @param {unknown} data - JSON data
+ * @param {ResponseOptions} [options] - Response options
+ * @returns {Response} Web standard Response
  */
 export function createJsonResponse(data: unknown, options: ResponseOptions = {}): Response {
   const headers = {
@@ -82,10 +112,14 @@ export function createJsonResponse(data: unknown, options: ResponseOptions = {})
 }
 
 /**
- * Create a text response
- * @param text - Text content
- * @param options - Response options
- * @returns Web standard Response
+ * 📝 Create a text response
+ * 
+ * Creates a response with plain text content type and
+ * text content.
+ * 
+ * @param {string} text - Text content
+ * @param {ResponseOptions} [options] - Response options
+ * @returns {Response} Web standard Response
  */
 export function createTextResponse(text: string, options: ResponseOptions = {}): Response {
   const headers = {
@@ -100,10 +134,14 @@ export function createTextResponse(text: string, options: ResponseOptions = {}):
 }
 
 /**
- * Create an HTML response
- * @param html - HTML content
- * @param options - Response options
- * @returns Web standard Response
+ * 🌐 Create an HTML response
+ * 
+ * Creates a response with HTML content type and HTML
+ * content.
+ * 
+ * @param {string} html - HTML content
+ * @param {ResponseOptions} [options] - Response options
+ * @returns {Response} Web standard Response
  */
 export function createHtmlResponse(html: string, options: ResponseOptions = {}): Response {
   const headers = {
@@ -118,10 +156,14 @@ export function createHtmlResponse(html: string, options: ResponseOptions = {}):
 }
 
 /**
- * Create a redirect response
- * @param url - Redirect URL
- * @param permanent - Whether the redirect is permanent
- * @returns Web standard Response
+ * 🔄 Create a redirect response
+ * 
+ * Creates a response that redirects to another URL,
+ * supporting both temporary and permanent redirects.
+ * 
+ * @param {string} url - Redirect URL
+ * @param {boolean} [permanent=false] - Whether the redirect is permanent
+ * @returns {Response} Web standard Response
  */
 export function createRedirectResponse(url: string, permanent = false): Response {
   return new Response(null, {
@@ -133,9 +175,14 @@ export function createRedirectResponse(url: string, permanent = false): Response
 }
 
 /**
- * Add standard HATEOAS headers to a response
- * @param response - Web standard Response
- * @returns Enhanced response with HATEOAS headers
+ * 🎨 Add standard HATEOAS headers to a response
+ * 
+ * Enhances a response with HATEOAS-specific headers,
+ * including CORS and caching headers for proper API
+ * functionality.
+ * 
+ * @param {Response} response - Web standard Response
+ * @returns {Response} Enhanced response with HATEOAS headers
  */
 export function addHateoasHeaders(response: Response): Response {
   const newHeaders = new Headers(response.headers);
@@ -156,9 +203,14 @@ export function addHateoasHeaders(response: Response): Response {
 }
 
 /**
- * Create an error response with appropriate status code and format
- * @param error - Error object
- * @returns Web standard Response with error details
+ * ⚠️ Create an error response with appropriate status code and format
+ * 
+ * Creates a standardized error response with proper
+ * status code and error details, following HATEOAS
+ * principles.
+ * 
+ * @param {Error} error - Error object
+ * @returns {Response} Web standard Response with error details
  */
 export function createErrorResponse(error: Error): Response {
   let status = 500;

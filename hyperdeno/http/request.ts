@@ -1,34 +1,80 @@
 /**
- * Request utilities for HATEOAS API
+ * 🔄 Request Utilities for HATEOAS API
  * 
- * Provides helper functions for working with web standard Request objects.
+ * This module provides helper functions for working with web standard Request
+ * objects in a HATEOAS context. It handles request parsing, validation, and
+ * data extraction while maintaining HATEOAS principles.
+ * 
+ * Key features:
+ * - Path parameter parsing
+ * - Query parameter handling
+ * - Request body parsing
+ * - Data validation
+ * 
+ * @example
+ * ```typescript
+ * const params = parsePath('/users/:id', request.url);
+ * const query = parseQuery(request);
+ * const body = await parseBody(request);
+ * ```
  */
 
 import { ValidationError } from '../core/errors.ts';
 
 /**
- * Path parameters interface
+ * 🛣️ Path parameters interface
+ * 
+ * Defines the structure for URL path parameters extracted from
+ * request paths, enabling dynamic route handling.
+ * 
+ * @interface PathParams
+ * @property {string} [key: string] - Path parameter values
  */
 export interface PathParams {
   [key: string]: string;
 }
 
 /**
- * Query parameters interface
+ * 🔍 Query parameters interface
+ * 
+ * Defines the structure for URL query parameters extracted from
+ * request URLs, enabling flexible request filtering and options.
+ * 
+ * @interface QueryParams
+ * @property {string} [key: string] - Query parameter values
  */
 export interface QueryParams {
   [key: string]: string;
 }
 
 /**
- * Form data interface
+ * 📝 Form data interface
+ * 
+ * Defines the structure for form data submitted in requests,
+ * supporting both text fields and file uploads.
+ * 
+ * @interface FormData
+ * @property {string | File} [key: string] - Form field values
  */
 export interface FormData {
   [key: string]: string | File;
 }
 
 /**
- * Validation rule interface
+ * ✅ Validation rule interface
+ * 
+ * Defines the structure for validation rules that can be applied
+ * to request data, ensuring data integrity and type safety.
+ * 
+ * @interface ValidationRule
+ * @property {boolean} [required] - Whether the field is required
+ * @property {'string' | 'number' | 'boolean' | 'array' | 'object'} [type] - Data type
+ * @property {number} [min] - Minimum value for numbers
+ * @property {number} [max] - Maximum value for numbers
+ * @property {number} [minLength] - Minimum length for strings
+ * @property {number} [maxLength] - Maximum length for strings
+ * @property {string} [pattern] - Regular expression pattern
+ * @property {Function} [validate] - Custom validation function
  */
 export interface ValidationRule {
   required?: boolean;
@@ -42,17 +88,27 @@ export interface ValidationRule {
 }
 
 /**
- * Validation schema interface
+ * 📚 Validation schema interface
+ * 
+ * Defines a schema for validating request data, mapping field
+ * names to their validation rules.
+ * 
+ * @interface ValidationSchema
+ * @property {ValidationRule} [key: string] - Field validation rules
  */
 export interface ValidationSchema {
   [key: string]: ValidationRule;
 }
 
 /**
- * Parse URL path parameters
- * @param pattern - URL pattern with parameter placeholders
- * @param path - Actual URL path
- * @returns Path parameters
+ * 🛣️ Parse URL path parameters
+ * 
+ * Extracts path parameters from a URL path based on a pattern,
+ * enabling dynamic route handling and parameter extraction.
+ * 
+ * @param {string} pattern - URL pattern with parameter placeholders
+ * @param {string} path - Actual URL path
+ * @returns {PathParams} Path parameters
  */
 export function parsePath(pattern: string, path: string): PathParams {
   const params: PathParams = {};
@@ -87,9 +143,13 @@ export function parsePath(pattern: string, path: string): PathParams {
 }
 
 /**
- * Parse query parameters from a request URL
- * @param request - Web standard Request object
- * @returns Query parameters
+ * 🔍 Parse query parameters from a request URL
+ * 
+ * Extracts query parameters from a request URL, enabling
+ * flexible request filtering and options.
+ * 
+ * @param {Request} request - Web standard Request object
+ * @returns {QueryParams} Query parameters
  */
 export function parseQuery(request: Request): QueryParams {
   const url = new URL(request.url);
@@ -103,9 +163,13 @@ export function parseQuery(request: Request): QueryParams {
 }
 
 /**
- * Parse JSON request body
- * @param request - Web standard Request object
- * @returns Parsed JSON body
+ * 📦 Parse JSON request body
+ * 
+ * Parses a JSON request body, handling potential parsing errors
+ * and providing meaningful error messages.
+ * 
+ * @param {Request} request - Web standard Request object
+ * @returns {Promise<unknown>} Parsed JSON body
  * @throws {ValidationError} If JSON is invalid
  */
 export async function parseJSON(request: Request): Promise<unknown> {
@@ -119,9 +183,13 @@ export async function parseJSON(request: Request): Promise<unknown> {
 }
 
 /**
- * Parse form data from request body
- * @param request - Web standard Request object
- * @returns Parsed form data
+ * 📝 Parse form data from request body
+ * 
+ * Parses form data from a request body, supporting both text
+ * fields and file uploads.
+ * 
+ * @param {Request} request - Web standard Request object
+ * @returns {Promise<FormData>} Parsed form data
  */
 export async function parseFormData(request: Request): Promise<FormData> {
   const formData = await request.formData();
@@ -135,9 +203,13 @@ export async function parseFormData(request: Request): Promise<FormData> {
 }
 
 /**
- * Parse request body based on content type
- * @param request - Web standard Request object
- * @returns Parsed body
+ * 🔄 Parse request body based on content type
+ * 
+ * Parses a request body based on its content type, supporting
+ * various formats including JSON and form data.
+ * 
+ * @param {Request} request - Web standard Request object
+ * @returns {Promise<unknown | null>} Parsed body
  * @throws {ValidationError} If content type is unsupported
  */
 export async function parseBody(request: Request): Promise<unknown | null> {
@@ -165,10 +237,14 @@ export async function parseBody(request: Request): Promise<unknown | null> {
 }
 
 /**
- * Validate request data against a schema
- * @param data - Data to validate
- * @param schema - Validation schema
- * @returns Validated data
+ * ✅ Validate request data against a schema
+ * 
+ * Validates request data against a schema, ensuring data integrity
+ * and type safety while maintaining HATEOAS principles.
+ * 
+ * @param {T} data - Data to validate
+ * @param {ValidationSchema} schema - Validation schema
+ * @returns {T} Validated data
  * @throws {ValidationError} If validation fails
  */
 export function validateRequest<T extends Record<string, unknown>>(data: T, schema: ValidationSchema): T {
@@ -255,23 +331,22 @@ export function validateRequest<T extends Record<string, unknown>>(data: T, sche
       
       // Check pattern
       if (rule.pattern && !new RegExp(rule.pattern).test(strValue)) {
-        errors[key] = `${key} has an invalid format`;
+        errors[key] = `${key} format is invalid`;
         hasErrors = true;
       }
     }
     
-    // Custom validation function
+    // Custom validation
     if (rule.validate && typeof rule.validate === 'function') {
-      const validationResult = rule.validate(value);
-      if (validationResult !== true) {
-        errors[key] = typeof validationResult === 'string' 
-          ? validationResult 
-          : `${key} is invalid`;
+      const result = rule.validate(value);
+      if (result !== true) {
+        errors[key] = typeof result === 'string' ? result : `${key} is invalid`;
         hasErrors = true;
       }
     }
   }
   
+  // Throw validation error if there are any errors
   if (hasErrors) {
     throw new ValidationError('Validation failed', 'VALIDATION_ERROR', { errors });
   }

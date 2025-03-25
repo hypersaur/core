@@ -1,14 +1,45 @@
 /**
- * Validation Utilities
+ * 🔍 Validation Utilities for HATEOAS Resources
  * 
- * Provides utilities for validating data against schemas.
+ * This module provides utilities for validating data against schemas in a
+ * HATEOAS context. It ensures that resources and their properties meet
+ * the required specifications while maintaining HATEOAS principles.
+ * 
+ * Key features:
+ * - Schema-based validation
+ * - Type checking
+ * - Custom validation rules
+ * - Middleware support
+ * 
+ * @example
+ * ```typescript
+ * const schema = {
+ *   name: { type: 'string', required: true },
+ *   age: { type: 'number', min: 0 }
+ * };
+ * const validated = validate(data, schema);
+ * ```
  */
 
 import { ValidationError } from '../core/errors.ts';
 import { parseBody } from '../http/request.ts';
 
 /**
- * Validation rule interface
+ * 📋 Validation rule interface
+ * 
+ * Defines the structure for validation rules that can be applied
+ * to resource properties. Supports various validation types and
+ * custom validation functions.
+ * 
+ * @interface ValidationRule
+ * @property {'string' | 'number' | 'boolean' | 'array' | 'object'} [type] - Data type
+ * @property {boolean} [required] - Whether the field is required
+ * @property {number} [min] - Minimum value for numbers
+ * @property {number} [max] - Maximum value for numbers
+ * @property {number} [minLength] - Minimum length for strings
+ * @property {number} [maxLength] - Maximum length for strings
+ * @property {string} [pattern] - Regular expression pattern
+ * @property {Function} [validate] - Custom validation function
  */
 export interface ValidationRule {
   type?: 'string' | 'number' | 'boolean' | 'array' | 'object';
@@ -22,17 +53,28 @@ export interface ValidationRule {
 }
 
 /**
- * Validation schema interface
+ * 📚 Validation schema interface
+ * 
+ * Defines a schema for validating resource properties, mapping
+ * field names to their validation rules.
+ * 
+ * @interface ValidationSchema
+ * @property {ValidationRule} [key: string] - Field validation rules
  */
 export interface ValidationSchema {
   [key: string]: ValidationRule;
 }
 
 /**
- * Validate data against a schema
- * @param data - Data to validate
- * @param schema - Validation schema
- * @returns Validated data
+ * ✅ Validate data against a schema
+ * 
+ * Validates data against a schema, ensuring all properties meet
+ * their specified requirements. Throws a ValidationError if any
+ * validation fails.
+ * 
+ * @param {Record<string, unknown>} data - Data to validate
+ * @param {ValidationSchema} schema - Validation schema
+ * @returns {Record<string, unknown>} Validated data
  * @throws {ValidationError} If validation fails
  */
 export function validate(data: Record<string, unknown>, schema: ValidationSchema): Record<string, unknown> {
@@ -166,10 +208,15 @@ export function validate(data: Record<string, unknown>, schema: ValidationSchema
 }
 
 /**
- * Create a validation middleware
- * @param schema - Validation schema
- * @param source - Data source (body, query, params)
- * @returns Middleware function
+ * 🔄 Create a validation middleware
+ * 
+ * Creates a middleware function that validates request data against
+ * a schema, ensuring that all incoming requests meet the specified
+ * requirements before processing.
+ * 
+ * @param {ValidationSchema} schema - Validation schema
+ * @param {'body' | 'query' | 'params'} [source='body'] - Data source
+ * @returns {Function} Middleware function
  */
 export function validateMiddleware(
   schema: ValidationSchema,
