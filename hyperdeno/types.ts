@@ -20,10 +20,6 @@ export type { PathParams, QueryParams } from "./http/request.ts";
 export type { ResponseOptions } from "./http/response.ts";
 export type { MediaType, Format } from "./http/content-type.ts";
 
-// Renderer types
-export type { RendererOptions } from "./rendering/renderer.ts";
-export type { RendererFactoryOptions } from "./rendering/renderer_factory.ts";
-
 // Validation types
 export type { ValidationRule, ValidationSchema } from "./util/validation.ts";
 

@@ -1,10 +1,10 @@
 /**
  * ⚠️ Standard Error Classes for HATEOAS Framework
  * 
- * This module provides a comprehensive error handling system for HATEOAS APIs,
+ * This module provides a streamlined error handling system for HATEOAS APIs,
  * ensuring consistent error responses that follow REST and HATEOAS principles.
- * Each error type includes appropriate HTTP status codes and machine-readable
- * error codes for client processing.
+ * Core error types cover the most common use cases while maintaining flexibility
+ * through error details.
  * 
  * Key features:
  * - Standardized error response format
@@ -138,10 +138,13 @@ export class NotFoundError extends ApiError {
 }
 
 /**
- * ⚠️ Error for invalid input data
+ * ⚠️ Error for validation and invalid input
  * 
- * Represents a 400 Bad Request error, used when client input fails
- * validation or is otherwise invalid.
+ * Handles all validation-related errors including:
+ * - Invalid input data
+ * - Invalid arguments
+ * - Content negotiation failures
+ * - State transition errors
  * 
  * @class ValidationError
  * @extends {ApiError}
@@ -160,135 +163,50 @@ export class ValidationError extends ApiError {
 }
 
 /**
- * ⚠️ Error for invalid arguments in function calls
+ * 🔒 Error for authentication and authorization
  * 
- * Represents a 400 Bad Request error, used when function arguments
- * are invalid or missing.
+ * Handles all security-related errors including:
+ * - Unauthorized access
+ * - Forbidden operations
+ * - Authentication failures
  * 
- * @class InvalidArgumentError
+ * @class AuthError
  * @extends {ApiError}
  */
-export class InvalidArgumentError extends ApiError {
+export class AuthError extends ApiError {
   /**
-   * 🎨 Creates an invalid argument error
+   * 🎨 Creates an authentication error
    * 
-   * @param {string} [message='Invalid argument'] - Error message
-   * @param {string} [code='INVALID_ARGUMENT'] - Error code
+   * @param {string} [message='Authentication failed'] - Error message
+   * @param {string} [code='AUTH_ERROR'] - Error code
    * @param {ErrorDetails | null} [details=null] - Additional error details
    */
-  constructor(message: string = 'Invalid argument', code: string = 'INVALID_ARGUMENT', details: ErrorDetails | null = null) {
-    super(message, 400, code, details);
-  }
-}
-
-/**
- * 🔒 Error for unauthorized requests
- * 
- * Represents a 401 Unauthorized error, used when authentication
- * is required but not provided.
- * 
- * @class UnauthorizedError
- * @extends {ApiError}
- */
-export class UnauthorizedError extends ApiError {
-  /**
-   * 🎨 Creates an unauthorized error
-   * 
-   * @param {string} [message='Unauthorized'] - Error message
-   * @param {string} [code='UNAUTHORIZED'] - Error code
-   * @param {ErrorDetails | null} [details=null] - Additional error details
-   */
-  constructor(message: string = 'Unauthorized', code: string = 'UNAUTHORIZED', details: ErrorDetails | null = null) {
+  constructor(message: string = 'Authentication failed', code: string = 'AUTH_ERROR', details: ErrorDetails | null = null) {
     super(message, 401, code, details);
   }
 }
 
 /**
- * 🔒 Error for forbidden requests
+ * ⚠️ Error for server and internal issues
  * 
- * Represents a 403 Forbidden error, used when authentication is
- * provided but the user lacks permission.
+ * Handles all server-side errors including:
+ * - Internal server errors
+ * - Resource conflicts
+ * - Service unavailability
  * 
- * @class ForbiddenError
+ * @class ServerError
  * @extends {ApiError}
  */
-export class ForbiddenError extends ApiError {
+export class ServerError extends ApiError {
   /**
-   * 🎨 Creates a forbidden error
+   * 🎨 Creates an internal server error
    * 
-   * @param {string} [message='Forbidden'] - Error message
-   * @param {string} [code='FORBIDDEN'] - Error code
+   * @param {string} [message='Internal server error'] - Error message
+   * @param {string} [code='SERVER_ERROR'] - Error code
    * @param {ErrorDetails | null} [details=null] - Additional error details
    */
-  constructor(message: string = 'Forbidden', code: string = 'FORBIDDEN', details: ErrorDetails | null = null) {
-    super(message, 403, code, details);
-  }
-}
-
-/**
- * ⚠️ Error for resource conflicts
- * 
- * Represents a 409 Conflict error, used when a request conflicts
- * with the current state of the resource.
- * 
- * @class ConflictError
- * @extends {ApiError}
- */
-export class ConflictError extends ApiError {
-  /**
-   * 🎨 Creates a conflict error
-   * 
-   * @param {string} [message='Resource conflict'] - Error message
-   * @param {string} [code='CONFLICT'] - Error code
-   * @param {ErrorDetails | null} [details=null] - Additional error details
-   */
-  constructor(message: string = 'Resource conflict', code: string = 'CONFLICT', details: ErrorDetails | null = null) {
-    super(message, 409, code, details);
-  }
-}
-
-/**
- * 🔄 Error for invalid state transitions
- * 
- * Represents a 422 Unprocessable Entity error, used when a state
- * transition is requested but not allowed in the current state.
- * 
- * @class StateTransitionError
- * @extends {ApiError}
- */
-export class StateTransitionError extends ApiError {
-  /**
-   * 🎨 Creates a state transition error
-   * 
-   * @param {string} [message='Invalid state transition'] - Error message
-   * @param {string} [code='INVALID_STATE_TRANSITION'] - Error code
-   * @param {ErrorDetails | null} [details=null] - Additional error details
-   */
-  constructor(message: string = 'Invalid state transition', code: string = 'INVALID_STATE_TRANSITION', details: ErrorDetails | null = null) {
-    super(message, 422, code, details);
-  }
-}
-
-/**
- * 🔄 Error for content negotiation failures
- * 
- * Represents a 406 Not Acceptable error, used when the server
- * cannot produce a response matching the client's content
- * negotiation preferences.
- * 
- * @class ContentNegotiationError
- * @extends {ApiError}
- */
-export class ContentNegotiationError extends ApiError {
-  /**
-   * 🎨 Creates a content negotiation error
-   * 
-   * @param {string} [message='Content negotiation failed'] - Error message
-   * @param {string} [code='CONTENT_NEGOTIATION_FAILED'] - Error code
-   * @param {ErrorDetails | null} [details=null] - Additional error details
-   */
-  constructor(message: string = 'Content negotiation failed', code: string = 'CONTENT_NEGOTIATION_FAILED', details: ErrorDetails | null = null) {
-    super(message, 406, code, details);
+  constructor(message: string = 'Internal server error', code: string = 'SERVER_ERROR', details: ErrorDetails | null = null) {
+    super(message, 500, code, details);
   }
 }
 
@@ -328,7 +246,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   unauthorized: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new UnauthorizedError(message, 'UNAUTHORIZED', details || null).toJSON(),
+    new AuthError(message, 'UNAUTHORIZED', details || null).toJSON(),
   
   /**
    * 🔒 Creates a forbidden error response
@@ -338,7 +256,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   forbidden: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ForbiddenError(message, 'FORBIDDEN', details || null).toJSON(),
+    new AuthError(message, 'FORBIDDEN', details || null).toJSON(),
   
   /**
    * ⚠️ Creates a conflict error response
@@ -348,7 +266,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   conflict: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ConflictError(message, 'CONFLICT', details || null).toJSON(),
+    new ServerError(message, 'CONFLICT', details || null).toJSON(),
   
   /**
    * 🔄 Creates a state transition error response
@@ -358,7 +276,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   invalidStateTransition: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new StateTransitionError(message, 'INVALID_STATE_TRANSITION', details || null).toJSON(),
+    new ValidationError(message, 'INVALID_STATE_TRANSITION', details || null).toJSON(),
   
   /**
    * 🔄 Creates a content negotiation error response
@@ -368,7 +286,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   contentNegotiationFailed: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ContentNegotiationError(message, 'CONTENT_NEGOTIATION_FAILED', details || null).toJSON(),
+    new ValidationError(message, 'CONTENT_NEGOTIATION_FAILED', details || null).toJSON(),
   
   /**
    * ⚠️ Creates an internal server error response
@@ -378,7 +296,7 @@ export const Errors = {
    * @returns {ErrorResponse} The formatted error response
    */
   internalServerError: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ApiError(message || 'Internal server error', 500, 'INTERNAL_SERVER_ERROR', details || null).toJSON()
+    new ServerError(message || 'Internal server error', 'INTERNAL_SERVER_ERROR', details || null).toJSON()
 };
 
 /**
