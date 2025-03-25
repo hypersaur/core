@@ -6,7 +6,7 @@ A HATEOAS (Hypermedia as the Engine of Application State) framework for building
 
 - **Pure Web Standards**: Built on web standard Request/Response objects
 - **HATEOAS Resources**: First-class support for hypermedia resources and links
-- **Content Negotiation**: Support for multiple content types (JSON, HAL, HTML)
+- **JSON-First**: Simple and consistent JSON-based HATEOAS format
 - **State Transitions**: Built-in support for state machines and transitions
 - **Validation**: Simple yet powerful validation system
 - **Modular Design**: Clean separation of concerns for easy customization
@@ -137,20 +137,34 @@ order.applyTransition("submit");
 console.log(order.getState()); // "submitted"
 ```
 
-### Content Negotiation
+### JSON Response Format
 
-The framework supports multiple content types out of the box:
+All resources are rendered as JSON with HATEOAS links and embedded resources:
 
-```ts
-// Client can request different formats using Accept header
-// Accept: application/json
-// Accept: application/hal+json
-// Accept: text/html
-
-// Or use query parameter
-// GET /api/users/123?format=json
-// GET /api/users/123?format=hal
-// GET /api/users/123?format=html
+```json
+{
+  "type": "user",
+  "properties": {
+    "name": "John Doe",
+    "email": "john@example.com"
+  },
+  "_links": {
+    "self": { "href": "/api/users/123" },
+    "edit": { "href": "/api/users/123", "method": "PUT" },
+    "delete": { "href": "/api/users/123", "method": "DELETE" }
+  },
+  "_embedded": {
+    "orders": [
+      {
+        "type": "order",
+        "properties": { "id": "789", "total": 99.99 },
+        "_links": {
+          "self": { "href": "/api/orders/789" }
+        }
+      }
+    ]
+  }
+}
 ```
 
 ## Modules
@@ -162,20 +176,13 @@ The framework supports multiple content types out of the box:
 - **LinkManager**: Handles hypermedia links
 - **ResourceState**: Manages resource state transitions
 - **Errors**: Standardized error types
+- **JsonRenderer**: JSON response renderer
 
 ### HTTP
 
 - **Router**: Web standard router
 - **Request**: Request parsing and validation
 - **Response**: Response creation helpers
-- **ContentType**: Content negotiation utilities
-
-### Rendering
-
-- **Renderer**: Base class for content renderers
-- **RendererFactory**: Content negotiation and renderer selection
-- **HalRenderer**: HAL+JSON renderer
-- **HtmlRenderer**: HTML renderer
 
 ### Util
 
