@@ -1,5 +1,5 @@
 {
-  "name": "@yourusername/hyperdeno",
+  "name": "@hypersaur/core",
   "version": "1.0.0",
   "exports": {
     ".": "./mod.ts",
