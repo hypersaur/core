@@ -1,13 +1,29 @@
 {
+  "name": "@yourusername/hyperdeno",
+  "version": "1.0.0",
+  "exports": {
+    ".": "./mod.ts",
+    "./core": "./hyperdeno/core/mod.ts",
+    "./http": "./hyperdeno/http/mod.ts",
+    "./rendering": "./hyperdeno/rendering/mod.ts",
+    "./util": "./hyperdeno/util/mod.ts"
+  },
   "tasks": {
-    "dev": "deno run --watch index.js"
+    "dev": "deno run --watch examples/basic-server.ts",
+    "test": "deno test",
+    "check": "deno check mod.ts",
+    "lint": "deno lint"
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "singleQuote": true,
+    "semiColons": true
   },
   "imports": {
-    "@std/assert": "jsr:@std/assert@1"
+    "@std/http": "jsr:@std/http@^1.0.0",
+    "@std/assert": "jsr:@std/assert@^1.0.0"
   },
-  "compilerOptions": {
-    "allowJs": true,
-    "checkJs": true,
-    "types": ["deno"]
+  "publish": {
+    "exclude": ["tests/", "examples/", ".github/", "scripts/"]
   }
 }

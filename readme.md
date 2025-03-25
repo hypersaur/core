@@ -1,68 +1,86 @@
-# Web HATEOAS Framework
+# HyperDeno
 
-A lightweight, standards-based HATEOAS framework for building hypermedia-driven APIs using web standard technologies.
+A HATEOAS (Hypermedia as the Engine of Application State) framework for building hypermedia-driven APIs using Deno 2.
 
 ## Features
 
-- **Pure Web Standards**: Built entirely on web standards with no external dependencies
+- **Pure Web Standards**: Built on web standard Request/Response objects
 - **HATEOAS Resources**: First-class support for hypermedia resources and links
 - **Content Negotiation**: Support for multiple content types (JSON, HAL, HTML)
 - **State Transitions**: Built-in support for state machines and transitions
 - **Validation**: Simple yet powerful validation system
-- **Error Handling**: Consistent error handling with useful error types
 - **Modular Design**: Clean separation of concerns for easy customization
 
 ## Installation
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/web-hateoas.git
+```ts
+// Import from JSR
+import { createApp, Resource } from "jsr:@yourusername/hyperdeno";
 
-# Navigate to the project
-cd web-hateoas
+// Or use a specific version
+import { createApp, Resource } from "jsr:@yourusername/hyperdeno@1.0.0";
+
+// Import specific submodules
+import { Resource, Collection } from "jsr:@yourusername/hyperdeno/core";
+import { Router } from "jsr:@yourusername/hyperdeno/http";
 ```
 
-## Basic Usage
+## Quick Start
 
-```javascript
-import { createApp, Resource, Collection } from './web-hateoas/index.js';
+```ts
+import { createApp, Resource, Collection } from "jsr:@yourusername/hyperdeno";
 
-// Create application
-const app = createApp({ port: 3000 });
-const router = app.router;
-
-// Define routes
-router.get('/api', async () => {
-  return new Resource()
-    .setType('api')
-    .setProperty('name', 'Example API')
-    .setProperty('version', '1.0.0')
-    .addLink('self', '/api')
-    .addLink('items', '/api/items');
+// Create app
+const app = createApp({ 
+  port: 3000,
+  onListen: ({ hostname, port }) => {
+    console.log(`Server running at http://${hostname}:${port}`);
+  }
 });
 
-router.get('/api/items', async () => {
-  const collection = new Collection({ type: 'items' });
+// Define API root
+app.router.get("/api", () => {
+  return new Resource()
+    .setType("api")
+    .setProperty("name", "Example API")
+    .setProperty("version", "1.0.0")
+    .addLink("self", "/api")
+    .addLink("users", "/api/users");
+});
+
+// Define collection endpoint
+app.router.get("/api/users", () => {
+  const users = [
+    new Resource({ type: "user", id: "1", properties: { name: "Alice" }}),
+    new Resource({ type: "user", id: "2", properties: { name: "Bob" }})
+  ];
   
-  // Add items to collection
-  for (let i = 1; i <= 5; i++) {
-    const item = new Resource()
-      .setType('item')
-      .setId(String(i))
-      .setProperty('name', `Item ${i}`)
-      .addLink('self', `/api/items/${i}`);
-      
-    collection.addItem(item);
-  }
+  users.forEach(user => {
+    user.addLink("self", `/api/users/${user.getId()}`);
+  });
   
-  collection.addLink('self', '/api/items');
-  collection.addLink('create', '/api/items', 'POST');
+  const collection = new Collection({ type: "users", items: users });
+  collection.addLink("self", "/api/users");
   
   return collection;
 });
 
+// Define resource endpoint
+app.router.get("/api/users/:id", (req, params) => {
+  const user = new Resource({
+    type: "user",
+    id: params.id,
+    properties: { name: "User " + params.id }
+  });
+  
+  user.addLink("self", `/api/users/${params.id}`);
+  user.addLink("collection", "/api/users");
+  
+  return user;
+});
+
 // Start the server
-app.start();
+await app.start();
 ```
 
 ## Key Concepts
@@ -71,93 +89,101 @@ app.start();
 
 Resources are the core building blocks of a HATEOAS API:
 
-```javascript
+```ts
 const user = new Resource()
-  .setType('user')
-  .setId('123')
-  .setProperty('name', 'John Doe')
-  .setProperty('email', 'john@example.com')
-  .addLink('self', '/api/users/123')
-  .addLink('edit', '/api/users/123', 'PUT')
-  .addLink('delete', '/api/users/123', 'DELETE');
+  .setType("user")
+  .setId("123")
+  .setProperty("name", "John Doe")
+  .setProperty("email", "john@example.com")
+  .addLink("self", "/api/users/123")
+  .addLink("edit", "/api/users/123", "PUT")
+  .addLink("delete", "/api/users/123", "DELETE");
 ```
 
 ### Collections
 
 Collections represent groups of resources with pagination support:
 
-```javascript
-const collection = new Collection({ type: 'users' });
+```ts
+const collection = new Collection({ type: "users" });
 
 collection.addItems(userResources);
 collection.setPage(2);
 collection.setPageSize(10);
 collection.setTotal(57);
-collection.addPaginationLinks('/api/users');
+collection.addPaginationLinks("/api/users");
 ```
 
 ### State Transitions
 
 Resources can have state with defined transitions:
 
-```javascript
+```ts
 const order = new Resource()
-  .setType('order')
-  .setId('456')
-  .setProperty('total', 99.99)
-  .setState('pending')
-  .addStateTransition('pending', 'processing', 'process', '/api/orders/456/process', 'POST')
-  .addStateTransition('processing', 'shipped', 'ship', '/api/orders/456/ship', 'POST')
-  .addStateTransition('shipped', 'delivered', 'deliver', '/api/orders/456/deliver', 'POST');
+  .setType("order")
+  .setId("456")
+  .setProperty("total", 99.99)
+  .setState("draft");
+  
+order.addTransition("draft", "submitted", "submit", "/api/orders/456/submit", "POST");
+order.addTransition("submitted", "approved", "approve", "/api/orders/456/approve", "POST");
+order.addTransition("approved", "shipped", "ship", "/api/orders/456/ship", "POST");
+
+// Get available transitions
+const transitions = order.getAvailableTransitions();
+
+// Apply a transition
+order.applyTransition("submit");
+console.log(order.getState()); // "submitted"
 ```
 
 ### Content Negotiation
 
-The framework supports multiple content types:
+The framework supports multiple content types out of the box:
 
-```javascript
-// Client can request different formats
-// GET /api/users/123
+```ts
+// Client can request different formats using Accept header
 // Accept: application/json
 // Accept: application/hal+json
 // Accept: text/html
 
-// Or use ?format=json, ?format=hal, ?format=html query parameter
+// Or use query parameter
+// GET /api/users/123?format=json
+// GET /api/users/123?format=hal
+// GET /api/users/123?format=html
 ```
 
-## Component Architecture
+## Modules
 
-The framework is organized into the following modules:
+### Core
 
-- **Core**: Resource, Collection, LinkManager, ResourceState, errors
-- **HTTP**: Router, Request utilities, Response utilities, Content-Type handling
-- **Rendering**: Renderers for different content types, Content negotiation
-- **Util**: Validation, Serialization, URI templates
-- **Server**: Web server implementation
+- **Resource**: Base hypermedia resource class
+- **Collection**: Resource collection with pagination
+- **LinkManager**: Handles hypermedia links
+- **ResourceState**: Manages resource state transitions
+- **Errors**: Standardized error types
 
-## API Reference
+### HTTP
 
-See the [API Reference](./docs/api-reference.md) for detailed documentation of all components.
+- **Router**: Web standard router
+- **Request**: Request parsing and validation
+- **Response**: Response creation helpers
+- **ContentType**: Content negotiation utilities
 
-## Examples
+### Rendering
 
-See the [examples](./examples) directory for more examples:
+- **Renderer**: Base class for content renderers
+- **RendererFactory**: Content negotiation and renderer selection
+- **HalRenderer**: HAL+JSON renderer
+- **HtmlRenderer**: HTML renderer
 
-- [Basic API](./examples/basic-api.js) - Simple CRUD API
-- [State Machine](./examples/state-machine.js) - API with state transitions
-- [Content Negotiation](./examples/content-negotiation.js) - API with multiple representations
+### Util
 
-## Comparison with Original Implementation
+- **Validation**: Request validation utilities
 
-This framework addresses several issues from the original implementation:
+## Full Documentation
 
-1. **Simplified Architecture**: Clearer separation of concerns
-2. **Web Standards Based**: Uses standard Request/Response objects
-3. **No External Dependencies**: Built on pure JavaScript and Web APIs
-4. **Consistent Error Handling**: Standardized error system
-5. **Better Resource Management**: Improved resource creation and manipulation
-6. **Cleaner Content Negotiation**: Simplified negotiation system
-7. **Enhanced Documentation**: Better JSDoc comments and examples
+Visit our [full documentation](https://yourusername.github.io/hyperdeno/) for detailed API reference, guides, and examples.
 
 ## Contributing
 
