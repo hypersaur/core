@@ -6,7 +6,7 @@
  */
 
 import { Server } from './server.ts';
-import type { Resource } from './core/resource.ts';
+import { Resource } from './core/resource.ts';
 import { Router } from './http/router.ts';
 import type { RendererFactory } from './rendering/renderer_factory.ts';
 

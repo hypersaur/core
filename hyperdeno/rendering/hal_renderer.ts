@@ -1,6 +1,6 @@
-import type { Renderer } from './renderer.ts';
+import { Renderer } from './renderer.ts';
 import type { Resource } from '../core/resource.ts';
-import type { Collection } from '../core/collection.ts';
+import { Collection } from '../core/collection.ts';
 import type { Link } from '../core/link.ts';
 
 interface HalData {
