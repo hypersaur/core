@@ -527,30 +527,39 @@ export class Resource {
   }
 
   /**
-   * 📦 Converts the resource to a JSON representation
+   * 📦 Converts the resource to a JSON-compatible object
    * 
-   * Serializes the resource into a HAL-compliant JSON format, including all
-   * properties, links, and embedded resources. This is essential for API
-   * responses and client-server communication.
+   * Serializes the resource into a JSON-compatible format that
+   * follows HATEOAS principles, including properties, links,
+   * and embedded resources.
    * 
    * @returns {Record<string, unknown>} The JSON representation
    */
   toJSON(): Record<string, unknown> {
-    const json: Record<string, unknown> = {
-      ...this.properties,
-      _links: this.getLinks(),
-      _embedded: Object.entries(this.embedded).reduce((acc, [rel, resources]) => {
-        acc[rel] = resources.map(r => r.toJSON());
-        return acc;
-      }, {} as Record<string, unknown[]>)
-    };
+    const json: Record<string, unknown> = {};
 
+    // Add type and id if set
     if (this.type) {
-      json._type = this.type;
+      json.type = this.type;
+    }
+    if (this.id) {
+      json.id = this.id;
     }
 
-    if (this.id) {
-      json._id = this.id;
+    // Add properties
+    if (Object.keys(this.properties).length > 0) {
+      json.properties = this.properties;
+    }
+
+    // Add links if any exist
+    const links = this.linkManager.getLinks();
+    if (Object.keys(links).length > 0) {
+      json.links = links;
+    }
+
+    // Add embedded resources if any exist
+    if (Object.keys(this.embedded).length > 0) {
+      json.embedded = this.embedded;
     }
 
     return json;

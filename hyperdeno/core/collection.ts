@@ -315,9 +315,8 @@ export class Collection extends Resource {
   /**
    * 📊 Gets the current pagination information
    * 
-   * Returns the current pagination state, which is essential for
-   * generating navigation links and understanding the collection's
-   * structure.
+   * Returns the current pagination metadata for the collection,
+   * which is essential for client-side pagination handling.
    * 
    * @returns {PaginationInfo | null} The current pagination info or null if not set
    */
@@ -342,35 +341,40 @@ export class Collection extends Resource {
   /**
    * 🔗 Adds pagination links to the collection
    * 
-   * Generates and adds standard HATEOAS pagination links (first, next,
-   * prev, last) to the collection, enabling clients to navigate through
-   * the pages of resources.
+   * Adds standard HATEOAS pagination links (self, first, next, prev, last)
+   * based on the current pagination state. This enables clients to navigate
+   * through the collection efficiently.
    * 
-   * @param {string} baseUrl - The base URL for generating pagination links
+   * @param {string} baseUrl - The base URL for pagination links
    * @returns {Collection} The collection instance for method chaining
    */
   addPaginationLinks(baseUrl: string): Collection {
-    if (!this.#pagination) return this;
-    
-    const { page, pageSize, total } = this.#pagination;
-    const totalPages = this.getTotalPages();
-    
-    // Add first page link
-    this.addLink('first', `${baseUrl}?page=1&pageSize=${pageSize}`);
-    
-    // Add previous page link if not on first page
-    if (page > 1) {
-      this.addLink('prev', `${baseUrl}?page=${page - 1}&pageSize=${pageSize}`);
+    if (!this.#pagination) {
+      return this;
     }
-    
-    // Add next page link if not on last page
+
+    const { page, pageSize, total } = this.#pagination;
+    const totalPages = Math.ceil(total / pageSize);
+
+    // Add self link
+    this.addLink('self', `${baseUrl}?page=${page}&pageSize=${pageSize}`);
+
+    // Add first link
+    this.addLink('first', `${baseUrl}?page=1&pageSize=${pageSize}`);
+
+    // Add next link if not on last page
     if (page < totalPages) {
       this.addLink('next', `${baseUrl}?page=${page + 1}&pageSize=${pageSize}`);
     }
-    
-    // Add last page link
+
+    // Add prev link if not on first page
+    if (page > 1) {
+      this.addLink('prev', `${baseUrl}?page=${page - 1}&pageSize=${pageSize}`);
+    }
+
+    // Add last link
     this.addLink('last', `${baseUrl}?page=${totalPages}&pageSize=${pageSize}`);
-    
+
     return this;
   }
   
@@ -394,23 +398,27 @@ export class Collection extends Resource {
   }
   
   /**
-   * 📦 Converts the collection to a JSON representation
+   * 📦 Converts the collection to a JSON-compatible object
    * 
-   * Serializes the collection into a HAL-compliant JSON format,
-   * including all items, pagination info, and links. This is
-   * essential for API responses and client-server communication.
+   * Serializes the collection into a JSON-compatible format that
+   * follows HATEOAS principles, including all items, pagination,
+   * and links.
    * 
    * @returns {Record<string, unknown>} The JSON representation
    */
   override toJSON(): Record<string, unknown> {
     const json = super.toJSON();
     
-    // Add the collection items
-    json[this.#collectionName] = this.#items.map(item => item.toJSON());
+    // Add collection-specific properties
+    if (this.#items.length > 0) {
+      json.embedded = {
+        [this.#collectionName]: this.#items.map(item => item.toJSON())
+      };
+    }
     
-    // Add pagination info if available
+    // Add pagination if set
     if (this.#pagination) {
-      json._pagination = { ...this.#pagination };
+      json.pagination = { ...this.#pagination };
     }
     
     return json;
