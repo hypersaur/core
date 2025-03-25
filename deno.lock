@@ -35,7 +35,7 @@
     "https://deno.land/std@0.208.0/async/delay.ts": "a6142eb44cdd856b645086af2b811b1fcce08ec06bb7d50969e6a872ee9b8659",
     "https://deno.land/std@0.208.0/fmt/colors.ts": "34b3f77432925eb72cf0bfb351616949746768620b8e5ead66da532f93d10ba2",
     "https://deno.land/std@0.208.0/http/server.ts": "f3cde6672e631d3e00785743cfa96bfed275618c0352c5ae84abbe5a2e0e4afc",
-    "https://deno.land/std@0.208.0/testing/asserts.ts": "605bbd2ef0695e2a4324d810c4ad22e56041d51afb9584fc0b4e81084b14b1d6"
+    "jsr:@std/assert": "605bbd2ef0695e2a4324d810c4ad22e56041d51afb9584fc0b4e81084b14b1d6"
   },
   "workspace": {
     "dependencies": [

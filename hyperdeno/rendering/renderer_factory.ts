@@ -1,8 +1,8 @@
-import { Renderer } from './renderer.ts';
+import type { Renderer } from './renderer.ts';
 import { HalRenderer } from './hal_renderer.ts';
 import { HtmlRenderer } from './html_renderer.ts';
-import { Resource } from '../core/resource.ts';
-import { Collection } from '../core/collection.ts';
+import type { Resource } from '../core/resource.ts';
+import type { Collection } from '../core/collection.ts';
 
 /**
  * Factory class for managing renderers and handling content negotiation

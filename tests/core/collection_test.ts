@@ -1,8 +1,8 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import { assertEquals, assertExists, assertThrows } from "jsr:@std/assert";
 import { Collection } from "../../hyperdeno/core/collection.ts";
 import { Resource } from "../../hyperdeno/core/resource.ts";
 import { InvalidArgumentError } from "../../hyperdeno/core/errors.ts";
-import { Link } from "../../hyperdeno/core/link.ts";
+import type { Link } from "../../hyperdeno/core/link.ts";
 
 Deno.test("Collection Creation and Initialization", async (t) => {
   await t.step("should create an empty collection", () => {

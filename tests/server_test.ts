@@ -1,4 +1,4 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import { assertEquals, assertExists } from "jsr:@std/assert";
 import { Server } from "../hyperdeno/server.ts";
 import { Resource } from "../hyperdeno/core/resource.ts";
 import { Collection } from "../hyperdeno/core/collection.ts";
@@ -44,7 +44,7 @@ Deno.test("Server Creation and Management", async (t) => {
     const server = new Server();
     const router = server.getRouter();
     
-    router.get("/articles/:id", (request: Request, params: Record<string, string>) => {
+    router.get("/articles/:id", (_request: Request, params: Record<string, string>) => {
       const article = new Resource({ 
         type: "article", 
         id: params.id,
@@ -121,7 +121,7 @@ Deno.test("Server Creation and Management", async (t) => {
     const server = new Server();
     const router = server.getRouter();
 
-    router.get("/users/:userId/posts/:postId", (request, params) => {
+    router.get("/users/:userId/posts/:postId", (_request, params) => {
       return new Response(JSON.stringify(params));
     });
 

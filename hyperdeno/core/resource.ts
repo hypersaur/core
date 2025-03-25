@@ -18,9 +18,9 @@
  * ```
  */
 
-import { LinkManager, LinkObject, LinkOptions } from './link.ts';
-import { ResourceState, StateTransition } from './state.ts';
-import { InvalidArgumentError, StateTransitionError } from './errors.ts';
+import { LinkManager, type LinkObject, type LinkOptions } from './link.ts';
+import { ResourceState, type StateTransition } from './state.ts';
+import { InvalidArgumentError } from './errors.ts';
 
 /**
  * Options for creating a new Resource instance

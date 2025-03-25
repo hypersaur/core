@@ -1,4 +1,4 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import { assertEquals, assertExists, assertThrows } from "jsr:@std/assert";
 import { RendererFactory } from "../../hyperdeno/rendering/renderer_factory.ts";
 import { Resource } from "../../hyperdeno/core/resource.ts";
 import { Collection } from "../../hyperdeno/core/collection.ts";

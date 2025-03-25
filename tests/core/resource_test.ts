@@ -1,8 +1,6 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import { assertEquals, assertExists, assertThrows } from "jsr:@std/assert";
 import { Resource } from "../../hyperdeno/core/resource.ts";
-import { Link } from "../../hyperdeno/core/link.ts";
 import { InvalidArgumentError } from "../../hyperdeno/core/errors.ts";
-import { StateTransition } from "../../hyperdeno/core/state.ts";
 import { StateTransitionError } from "../../hyperdeno/core/errors.ts";
 
 Deno.test("Resource Creation and Initialization", async (t) => {

@@ -1,6 +1,7 @@
 {
   "name": "@hypersaur/core",
   "version": "1.0.0",
+  "license": "MIT",
   "exports": {
     ".": "./mod.ts",
     "./core": "./hyperdeno/core/mod.ts",

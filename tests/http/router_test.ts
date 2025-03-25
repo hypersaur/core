@@ -1,9 +1,8 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
+import { assertEquals, assertExists } from "jsr:@std/assert";
 import { Router, HTTP_METHODS } from "../../hyperdeno/http/router.ts";
 import { Resource } from "../../hyperdeno/core/resource.ts";
 import { Collection } from "../../hyperdeno/core/collection.ts";
 import { createResponse } from "../../hyperdeno/http/response.ts";
-import { NotFoundError } from "../../hyperdeno/core/errors.ts";
 
 Deno.test("Router Creation and Management", async (t) => {
   await t.step("should create router", () => {
@@ -25,7 +24,7 @@ Deno.test("Router Creation and Management", async (t) => {
 
   await t.step("should handle route parameters", async () => {
     const router = new Router();
-    router.get("/users/:id", (request, params) => {
+    router.get("/users/:id", (_request, params) => {
       return new Response(params.id);
     });
 
@@ -39,7 +38,7 @@ Deno.test("Router Creation and Management", async (t) => {
 
   await t.step("should handle multiple route parameters", async () => {
     const router = new Router();
-    router.get("/users/:userId/posts/:postId", (request, params) => {
+    router.get("/users/:userId/posts/:postId", (_request, params) => {
       return new Response(JSON.stringify(params));
     });
 
@@ -104,7 +103,7 @@ Deno.test("Router Creation and Management", async (t) => {
         const collection = new Collection({ type: "articles", items: articles });
         return createResponse(collection);
       },
-      get: (request, params) => {
+      get: (_request, params) => {
         const article = new Resource({ 
           type: "article", 
           id: params.id,
@@ -120,7 +119,7 @@ Deno.test("Router Creation and Management", async (t) => {
         });
         return createResponse(article, { status: 201 });
       },
-      update: (request, params) => {
+      update: (_request, params) => {
         const article = new Resource({ 
           type: "article", 
           id: params.id,

@@ -1,5 +1,5 @@
-import { assertEquals, assertExists, assertThrows } from "https://deno.land/std@0.208.0/testing/asserts.ts";
-import { LinkManager, Link, STANDARD_RELS } from "../../hyperdeno/core/link.ts";
+import { assertEquals, assertExists, assertThrows } from "jsr:@std/assert";
+import { LinkManager, type Link, STANDARD_RELS } from "../../hyperdeno/core/link.ts";
 import { InvalidArgumentError } from "../../hyperdeno/core/errors.ts";
 
 Deno.test("LinkManager Creation and Management", async (t) => {

@@ -171,7 +171,10 @@ export function validate(data: Record<string, unknown>, schema: ValidationSchema
  * @param source - Data source (body, query, params)
  * @returns Middleware function
  */
-export function validateMiddleware(schema: ValidationSchema, source: 'body' | 'query' | 'params' = 'body') {
+export function validateMiddleware(
+  schema: ValidationSchema,
+  source: 'body' | 'query' | 'params' = 'body'
+): (request: Request) => Promise<Request> {
   return async (request: Request & { params?: Record<string, string> }) => {
     let data: Record<string, unknown>;
     

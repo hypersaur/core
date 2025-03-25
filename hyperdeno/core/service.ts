@@ -1,4 +1,4 @@
-import { Resource } from './resource.ts';
+import type { Resource } from './resource.ts';
 import { Collection } from './collection.ts';
 
 /**

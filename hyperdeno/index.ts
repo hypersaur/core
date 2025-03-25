@@ -6,10 +6,9 @@
  */
 
 import { Server } from './server.ts';
-import { Resource } from './core/resource.ts';
-import { Collection } from './core/collection.ts';
+import type { Resource } from './core/resource.ts';
 import { Router } from './http/router.ts';
-import { RendererFactory } from './rendering/renderer_factory.ts';
+import type { RendererFactory } from './rendering/renderer_factory.ts';
 
 export { Resource } from './core/resource.ts';
 export { Collection } from './core/collection.ts';
@@ -21,7 +20,11 @@ export { Server } from './server.ts';
  * Create a new HyperDeno application
  * @returns A new application instance
  */
-export function createApp() {
+export function createApp(): {
+  getRouter: () => Router;
+  setRendererFactory: (factory: RendererFactory) => void;
+  handle: (request: Request) => Promise<Response>;
+} {
   const router = new Router();
   let rendererFactory: RendererFactory | null = null;
   
@@ -50,6 +53,6 @@ export function createApp() {
  * @param options - Server options
  * @returns A new server instance
  */
-export function createServer(options = {}) {
+export function createServer(options = {}): Server {
   return new Server(options);
 } 

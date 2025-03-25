@@ -9,7 +9,7 @@
 // import { createApp, Resource, Collection } from "jsr:@yourusername/hyperdeno";
 
 // For local development, import from the local module
-import { createApp, createServer, Resource, Collection, Router, PathParams } from "../mod.ts";
+import { createApp, createServer, Resource, Collection, type Router, type PathParams } from "../mod.ts";
 import { createResponse } from "../hyperdeno/http/response.ts";
 
 interface ServerOptions {

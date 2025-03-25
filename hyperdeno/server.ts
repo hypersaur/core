@@ -1,38 +1,37 @@
 /**
- * Deno server implementation for HyperDeno
+ * HyperDeno server implementation
  * 
- * This file contains the Deno-specific server implementation, keeping it separate
- * from the core framework code to allow for different server implementations.
+ * This file contains the main server implementation that uses the server abstraction
+ * to provide a framework-agnostic HTTP server.
  */
 
-import { serve } from "https://deno.land/std@0.208.0/http/server.ts";
 import { Router } from './http/router.ts';
 import { RendererFactory } from './rendering/renderer_factory.ts';
-import { createResponse, createErrorResponse } from './http/response.ts';
+import { type createResponse, createErrorResponse } from './http/response.ts';
 import { ApiError } from './core/errors.ts';
+import type { Server as ServerInterface, ServerOptions as BaseServerOptions } from './servers/types.ts';
+import { DenoServer } from './servers/deno_server.ts';
 
-export interface ServerOptions {
-  port?: number;
-  hostname?: string;
+export interface ServerOptions extends BaseServerOptions {
   rendererFactory?: RendererFactory;
 }
 
 export class Server {
-  private port: number;
-  private hostname: string;
-  private server: AbortController | null = null;
   private rendererFactory: RendererFactory;
   private router: Router;
+  private server: ServerInterface;
 
   /**
    * Creates a new server instance
    * @param {ServerOptions} options - Server configuration options
    */
   constructor(options: ServerOptions = {}) {
-    this.port = options.port || 8000;
-    this.hostname = options.hostname || '0.0.0.0';
+    const { rendererFactory, ...serverOptions } = options;
     this.router = new Router();
-    this.rendererFactory = options.rendererFactory || new RendererFactory();
+    this.rendererFactory = rendererFactory || new RendererFactory();
+    
+    // Create the appropriate server implementation
+    this.server = new DenoServer(this.handle.bind(this));
   }
 
   /**
@@ -40,14 +39,8 @@ export class Server {
    * @returns {Promise<void>}
    */
   async start(): Promise<void> {
-    const handler = async (request: Request): Promise<Response> => {
-      return this.handle(request);
-    };
-
-    await serve(handler, {
-      port: this.port,
-      hostname: this.hostname
-    });
+    await this.server.start();
+    console.log(`Server running at http://${this.server.getStatus() === 'running' ? 'localhost:8000' : 'stopped'}`);
   }
 
   /**
@@ -87,12 +80,7 @@ export class Server {
    * Stop the server
    */
   async stop(): Promise<void> {
-    if (!this.server) {
-      throw new Error('Server is not running');
-    }
-
-    this.server.abort();
-    this.server = null;
+    await this.server.stop();
     console.log('Server stopped');
   }
 } 
