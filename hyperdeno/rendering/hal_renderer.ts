@@ -107,12 +107,14 @@ export class HalRenderer extends Renderer {
 
     const embedded = resource.getEmbedded();
     if (embedded && Object.keys(embedded).length > 0) {
-      data.embedded = Object.fromEntries(
-        Object.entries(embedded).map(([rel, resources]) => [
-          rel,
-          resources.map((r: Resource) => this.renderResource(r))
-        ])
-      );
+      data.embedded = {};
+      for (const [rel, resources] of Object.entries(embedded)) {
+        if (Array.isArray(resources)) {
+          data.embedded[rel] = resources.length === 1 ? 
+            this.renderResource(resources[0]) : 
+            resources.map(r => this.renderResource(r));
+        }
+      }
     }
 
     return data;

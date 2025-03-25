@@ -1,6 +1,6 @@
 import { Renderer } from './renderer.ts';
 import type { Resource } from '../core/resource.ts';
-import type { Collection } from '../core/collection.ts';
+import { Collection } from '../core/collection.ts';
 
 /**
  * 🔗 LinkObject interface representing a HAL link structure
@@ -97,7 +97,7 @@ export class HtmlRenderer extends Renderer {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${properties.title || 'Resource'}</title>
+          <title>${this.escapeHtml(properties.title as string || 'Resource')}</title>
           <style>
             body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 2rem; }
             .resource { border: 1px solid #eee; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
@@ -105,13 +105,14 @@ export class HtmlRenderer extends Renderer {
             .link { display: inline-block; margin-right: 1rem; }
             .embedded { margin-top: 1rem; }
             .property { margin: 0.5rem 0; }
+            .collection-item { margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 4px; }
           </style>
         </head>
         <body>
           <div class="resource">
             ${this.renderProperties(properties)}
             ${this.renderLinks(links)}
-            ${this.renderEmbedded(embedded as Record<string, Resource[]>)}
+            ${resource instanceof Collection ? this.renderCollectionItems(resource) : this.renderEmbedded(embedded as Record<string, Resource[]>)}
           </div>
         </body>
       </html>
@@ -133,7 +134,7 @@ export class HtmlRenderer extends Renderer {
     return Object.entries(properties)
       .map(([key, value]) => `
         <div class="property">
-          <strong>${this.escapeHtml(key)}:</strong> ${this.escapeHtml(String(value))}
+          <strong>${this.escapeHtml(key as string)}:</strong> ${this.escapeHtml(String(value))}
         </div>
       `)
       .join('');
@@ -199,6 +200,24 @@ export class HtmlRenderer extends Renderer {
     `;
   }
 
+  private renderCollectionItems(collection: Collection): string {
+    const items = collection.getItems();
+    if (!items || items.length === 0) return '';
+
+    return `
+      <div class="embedded">
+        <h3>Collection Items</h3>
+        ${items.map(item => `
+          <div class="collection-item">
+            ${this.renderProperties(item.getProperties())}
+            ${this.renderLinks(item.getLinks())}
+            ${this.renderEmbedded(item.getEmbedded() as Record<string, Resource[]>)}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   /**
    * 🛡️ Escapes HTML special characters to prevent XSS attacks
    * 
@@ -210,6 +229,9 @@ export class HtmlRenderer extends Renderer {
    * @returns {string} The escaped HTML string
    */
   private escapeHtml(unsafe: string): string {
+    if (typeof unsafe !== 'string') {
+      unsafe = String(unsafe);
+    }
     return unsafe
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
