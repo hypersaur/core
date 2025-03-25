@@ -13,18 +13,18 @@
  * 
  * @example
  * ```typescript
- * const collection = new Collection({
+ * const users = createCollection({
  *   type: 'users',
- *   items: [user1, user2, user3]
+ *   items: [user1, user2, user3],
+ *   pagination: {
+ *     page: 1,
+ *     pageSize: 10,
+ *     total: 100
+ *   },
+ *   links: {
+ *     self: '/api/users'
+ *   }
  * });
- * 
- * collection.setPagination({
- *   page: 1,
- *   pageSize: 10,
- *   total: 100
- * });
- * 
- * collection.addPaginationLinks('/api/users');
  * ```
  */
 
@@ -73,21 +73,20 @@ export interface CollectionOptions {
 /**
  * 📚 Collection class for managing groups of resources with pagination support
  * 
- * This class extends Resource to inherit link management and other basic
- * functionality while adding collection-specific features. It implements
- * HATEOAS principles for resource collections, including:
+ * This class uses composition with Resource to implement HATEOAS principles
+ * for resource collections, including:
  * - Pagination with standard link relations
  * - Embedded resource management
  * - Collection-specific metadata
  * - Efficient resource grouping
  * 
  * @class Collection
- * @extends {Resource}
  */
-export class Collection extends Resource {
+export class Collection {
   #items: Resource[] = [];
   #pagination: PaginationInfo | null = null;
   #collectionName = 'items';
+  #resource: Resource;
   
   /**
    * 🎨 Creates a new Collection instance
@@ -98,14 +97,83 @@ export class Collection extends Resource {
    * @param {CollectionOptions} options - Configuration options for the collection
    */
   constructor(options: CollectionOptions = {}) {
-    super({
-      ...options,
-      type: options.type || 'collection'
+    this.#resource = new Resource({
+      type: options.type || 'collection',
+      id: options.id,
+      properties: options.properties
     });
+    
     if (options.items && Array.isArray(options.items)) {
       this.addItems(options.items);
     }
     this.#pagination = null;
+  }
+
+  // Resource delegation methods
+  setType(type: string): Collection {
+    this.#resource.setType(type);
+    return this;
+  }
+
+  getType(): string {
+    return this.#resource.getType();
+  }
+
+  setId(id: string | number): Collection {
+    this.#resource.setId(id);
+    return this;
+  }
+
+  getId(): string {
+    return this.#resource.getId();
+  }
+
+  setProperty(key: string, value: unknown): void {
+    this.#resource.setProperty(key, value);
+  }
+
+  getProperty(key: string): unknown {
+    return this.#resource.getProperty(key);
+  }
+
+  setProperties(properties: Record<string, unknown>): Collection {
+    this.#resource.setProperties(properties);
+    return this;
+  }
+
+  getProperties(): Record<string, unknown> {
+    return this.#resource.getProperties();
+  }
+
+  addLink(rel: string, href: string, method: string = 'GET'): Collection {
+    this.#resource.addLink(rel, href, method);
+    return this;
+  }
+
+  getLink(rel: string): unknown {
+    return this.#resource.getLink(rel);
+  }
+
+  getLinks(): Record<string, unknown> {
+    return this.#resource.getLinks();
+  }
+
+  hasLink(rel: string): boolean {
+    return this.#resource.hasLink(rel);
+  }
+
+  removeLink(rel: string): Collection {
+    this.#resource.removeLink(rel);
+    return this;
+  }
+
+  setState(state: string): Collection {
+    this.#resource.setState(state);
+    return this;
+  }
+
+  getState(): string {
+    return this.#resource.getState();
   }
   
   /**
@@ -406,8 +474,8 @@ export class Collection extends Resource {
    * 
    * @returns {Record<string, unknown>} The JSON representation
    */
-  override toJSON(): Record<string, unknown> {
-    const json = super.toJSON();
+  toJSON(): Record<string, unknown> {
+    const json = this.#resource.toJSON();
     
     // Add collection-specific properties
     if (this.#items.length > 0) {
