@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@*": "1.0.11",
     "jsr:@std/assert@1": "1.0.11",
+    "jsr:@std/assert@^1.0.10": "1.0.11",
     "jsr:@std/cli@^1.0.12": "1.0.15",
     "jsr:@std/encoding@^1.0.7": "1.0.7",
     "jsr:@std/fmt@^1.0.5": "1.0.5",
@@ -12,7 +13,8 @@
     "jsr:@std/media-types@^1.1.0": "1.1.0",
     "jsr:@std/net@^1.0.4": "1.0.4",
     "jsr:@std/path@^1.0.8": "1.0.8",
-    "jsr:@std/streams@^1.0.9": "1.0.9"
+    "jsr:@std/streams@^1.0.9": "1.0.9",
+    "jsr:@std/testing@*": "1.0.9"
   },
   "jsr": {
     "@std/assert@1.0.11": {
@@ -60,6 +62,13 @@
     },
     "@std/streams@1.0.9": {
       "integrity": "a9d26b1988cdd7aa7b1f4b51e1c36c1557f3f252880fa6cc5b9f37078b1a5035"
+    },
+    "@std/testing@1.0.9": {
+      "integrity": "9bdd4ac07cb13e7594ac30e90f6ceef7254ac83a9aeaa089be0008f33aab5cd4",
+      "dependencies": [
+        "jsr:@std/assert@^1.0.10",
+        "jsr:@std/internal"
+      ]
     }
   },
   "redirects": {
