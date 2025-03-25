@@ -33,4 +33,6 @@ jobs:
         run: deno fmt --check
 
       - name: Publish package
-        run: deno publish 
+        run: deno publish --provenance
+        env:
+          DENO_AUTH_TOKEN: ${{ secrets.DENO_AUTH_TOKEN }} 
