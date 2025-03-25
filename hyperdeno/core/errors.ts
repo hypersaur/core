@@ -1,14 +1,51 @@
 /**
- * Standard error classes for the HATEOAS framework
+ * ⚠️ Standard Error Classes for HATEOAS Framework
  * 
- * Provides a consistent error handling system with standardized
- * error types and status codes for HTTP responses.
+ * This module provides a comprehensive error handling system for HATEOAS APIs,
+ * ensuring consistent error responses that follow REST and HATEOAS principles.
+ * Each error type includes appropriate HTTP status codes and machine-readable
+ * error codes for client processing.
+ * 
+ * Key features:
+ * - Standardized error response format
+ * - HTTP status code mapping
+ * - Machine-readable error codes
+ * - Detailed error information
+ * 
+ * @example
+ * ```typescript
+ * throw new NotFoundError('User not found', 'USER_NOT_FOUND', {
+ *   resource: 'user',
+ *   id: '123'
+ * });
+ * ```
  */
 
+/**
+ * 📝 Interface for additional error details
+ * 
+ * Allows for flexible error details that can include any relevant
+ * information about the error condition.
+ * 
+ * @interface ErrorDetails
+ */
 export interface ErrorDetails {
   [key: string]: unknown;
 }
 
+/**
+ * 📦 Interface for standardized error responses
+ * 
+ * Defines the structure of error responses in HATEOAS APIs, ensuring
+ * consistent error handling across the application.
+ * 
+ * @interface ErrorResponse
+ * @property {Object} error - The error object
+ * @property {string} error.message - Human-readable error message
+ * @property {number} error.status - HTTP status code
+ * @property {string} error.code - Machine-readable error code
+ * @property {ErrorDetails} [error.details] - Additional error details
+ */
 export interface ErrorResponse {
   error: {
     message: string;
@@ -19,7 +56,13 @@ export interface ErrorResponse {
 }
 
 /**
- * Base API error class for all framework errors
+ * 🎯 Base API error class for all framework errors
+ * 
+ * Provides the foundation for all HATEOAS-specific errors, including
+ * standardized error handling and response formatting.
+ * 
+ * @class ApiError
+ * @extends {Error}
  */
 export class ApiError extends Error {
   status: number;
@@ -27,11 +70,15 @@ export class ApiError extends Error {
   details: ErrorDetails | null;
 
   /**
-   * Create a new API error
-   * @param message - Human-readable error message
-   * @param status - HTTP status code
-   * @param code - Machine-readable error code
-   * @param details - Additional error details
+   * 🎨 Creates a new API error
+   * 
+   * Initializes a new API error with standardized fields for consistent
+   * error handling across the HATEOAS framework.
+   * 
+   * @param {string} message - Human-readable error message
+   * @param {number} [status=500] - HTTP status code
+   * @param {string} [code='INTERNAL_ERROR'] - Machine-readable error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string, status: number = 500, code: string = 'INTERNAL_ERROR', details: ErrorDetails | null = null) {
     super(message);
@@ -48,8 +95,13 @@ export class ApiError extends Error {
   }
   
   /**
-   * Convert the error to a standardized response object
-   * @returns Error response object
+   * 📦 Converts the error to a standardized response object
+   * 
+   * Formats the error into a consistent JSON structure that follows
+   * HATEOAS principles and provides all necessary information for
+   * client processing.
+   * 
+   * @returns {ErrorResponse} The formatted error response
    */
   toJSON(): ErrorResponse {
     return {
@@ -64,14 +116,21 @@ export class ApiError extends Error {
 }
 
 /**
- * Error for resource not found
+ * 🔍 Error for resource not found
+ * 
+ * Represents a 404 Not Found error, which is common in HATEOAS APIs
+ * when a requested resource cannot be found.
+ * 
+ * @class NotFoundError
+ * @extends {ApiError}
  */
 export class NotFoundError extends ApiError {
   /**
-   * Create a not found error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a not found error
+   * 
+   * @param {string} [message='Resource not found'] - Error message
+   * @param {string} [code='NOT_FOUND'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Resource not found', code: string = 'NOT_FOUND', details: ErrorDetails | null = null) {
     super(message, 404, code, details);
@@ -79,14 +138,21 @@ export class NotFoundError extends ApiError {
 }
 
 /**
- * Error for invalid input data
+ * ⚠️ Error for invalid input data
+ * 
+ * Represents a 400 Bad Request error, used when client input fails
+ * validation or is otherwise invalid.
+ * 
+ * @class ValidationError
+ * @extends {ApiError}
  */
 export class ValidationError extends ApiError {
   /**
-   * Create a validation error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a validation error
+   * 
+   * @param {string} [message='Validation failed'] - Error message
+   * @param {string} [code='VALIDATION_ERROR'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Validation failed', code: string = 'VALIDATION_ERROR', details: ErrorDetails | null = null) {
     super(message, 400, code, details);
@@ -94,14 +160,21 @@ export class ValidationError extends ApiError {
 }
 
 /**
- * Error for invalid arguments in function calls
+ * ⚠️ Error for invalid arguments in function calls
+ * 
+ * Represents a 400 Bad Request error, used when function arguments
+ * are invalid or missing.
+ * 
+ * @class InvalidArgumentError
+ * @extends {ApiError}
  */
 export class InvalidArgumentError extends ApiError {
   /**
-   * Create an invalid argument error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates an invalid argument error
+   * 
+   * @param {string} [message='Invalid argument'] - Error message
+   * @param {string} [code='INVALID_ARGUMENT'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Invalid argument', code: string = 'INVALID_ARGUMENT', details: ErrorDetails | null = null) {
     super(message, 400, code, details);
@@ -109,14 +182,21 @@ export class InvalidArgumentError extends ApiError {
 }
 
 /**
- * Error for unauthorized requests
+ * 🔒 Error for unauthorized requests
+ * 
+ * Represents a 401 Unauthorized error, used when authentication
+ * is required but not provided.
+ * 
+ * @class UnauthorizedError
+ * @extends {ApiError}
  */
 export class UnauthorizedError extends ApiError {
   /**
-   * Create an unauthorized error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates an unauthorized error
+   * 
+   * @param {string} [message='Unauthorized'] - Error message
+   * @param {string} [code='UNAUTHORIZED'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Unauthorized', code: string = 'UNAUTHORIZED', details: ErrorDetails | null = null) {
     super(message, 401, code, details);
@@ -124,14 +204,21 @@ export class UnauthorizedError extends ApiError {
 }
 
 /**
- * Error for forbidden requests
+ * 🔒 Error for forbidden requests
+ * 
+ * Represents a 403 Forbidden error, used when authentication is
+ * provided but the user lacks permission.
+ * 
+ * @class ForbiddenError
+ * @extends {ApiError}
  */
 export class ForbiddenError extends ApiError {
   /**
-   * Create a forbidden error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a forbidden error
+   * 
+   * @param {string} [message='Forbidden'] - Error message
+   * @param {string} [code='FORBIDDEN'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Forbidden', code: string = 'FORBIDDEN', details: ErrorDetails | null = null) {
     super(message, 403, code, details);
@@ -139,14 +226,21 @@ export class ForbiddenError extends ApiError {
 }
 
 /**
- * Error for resource conflicts
+ * ⚠️ Error for resource conflicts
+ * 
+ * Represents a 409 Conflict error, used when a request conflicts
+ * with the current state of the resource.
+ * 
+ * @class ConflictError
+ * @extends {ApiError}
  */
 export class ConflictError extends ApiError {
   /**
-   * Create a conflict error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a conflict error
+   * 
+   * @param {string} [message='Resource conflict'] - Error message
+   * @param {string} [code='CONFLICT'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Resource conflict', code: string = 'CONFLICT', details: ErrorDetails | null = null) {
     super(message, 409, code, details);
@@ -154,14 +248,21 @@ export class ConflictError extends ApiError {
 }
 
 /**
- * Error for invalid state transitions
+ * 🔄 Error for invalid state transitions
+ * 
+ * Represents a 422 Unprocessable Entity error, used when a state
+ * transition is requested but not allowed in the current state.
+ * 
+ * @class StateTransitionError
+ * @extends {ApiError}
  */
 export class StateTransitionError extends ApiError {
   /**
-   * Create a state transition error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a state transition error
+   * 
+   * @param {string} [message='Invalid state transition'] - Error message
+   * @param {string} [code='INVALID_STATE_TRANSITION'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Invalid state transition', code: string = 'INVALID_STATE_TRANSITION', details: ErrorDetails | null = null) {
     super(message, 422, code, details);
@@ -169,14 +270,22 @@ export class StateTransitionError extends ApiError {
 }
 
 /**
- * Error for content negotiation failures
+ * 🔄 Error for content negotiation failures
+ * 
+ * Represents a 406 Not Acceptable error, used when the server
+ * cannot produce a response matching the client's content
+ * negotiation preferences.
+ * 
+ * @class ContentNegotiationError
+ * @extends {ApiError}
  */
 export class ContentNegotiationError extends ApiError {
   /**
-   * Create a content negotiation error
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
+   * 🎨 Creates a content negotiation error
+   * 
+   * @param {string} [message='Content negotiation failed'] - Error message
+   * @param {string} [code='CONTENT_NEGOTIATION_FAILED'] - Error code
+   * @param {ErrorDetails | null} [details=null] - Additional error details
    */
   constructor(message: string = 'Content negotiation failed', code: string = 'CONTENT_NEGOTIATION_FAILED', details: ErrorDetails | null = null) {
     super(message, 406, code, details);
@@ -184,97 +293,111 @@ export class ContentNegotiationError extends ApiError {
 }
 
 /**
- * Standard error responses for common scenarios
+ * 📚 Standard error responses for common scenarios
+ * 
+ * Provides factory functions for creating standardized error responses
+ * that follow HATEOAS principles and include appropriate status codes
+ * and error details.
  */
 export const Errors = {
   /**
-   * Create a not found error response
-   * @param message - Error message
-   * @param details - Additional error details
-   * @returns Error response object
+   * 🔍 Creates a not found error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
   notFound: (message?: string, details?: ErrorDetails): ErrorResponse => 
     new NotFoundError(message, 'RESOURCE_NOT_FOUND', details || null).toJSON(),
   
   /**
-   * Create a bad request error response
-   * @param message - Error message
-   * @param code - Error code
-   * @param details - Additional error details
-   * @returns Error response object
+   * ⚠️ Creates a bad request error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
-  badRequest: (message: string = 'Invalid request', code: string = 'BAD_REQUEST', details?: ErrorDetails): ErrorResponse => 
-    new ApiError(message, 400, code, details || null).toJSON(),
+  badRequest: (message?: string, details?: ErrorDetails): ErrorResponse =>
+    new ValidationError(message, 'BAD_REQUEST', details || null).toJSON(),
   
   /**
-   * Create an unauthorized error response
-   * @param message - Error message
-   * @param details - Additional error details
-   * @returns Error response object
+   * 🔒 Creates an unauthorized error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
-  unauthorized: (message?: string, details?: ErrorDetails): ErrorResponse => 
+  unauthorized: (message?: string, details?: ErrorDetails): ErrorResponse =>
     new UnauthorizedError(message, 'UNAUTHORIZED', details || null).toJSON(),
   
   /**
-   * Create a forbidden error response
-   * @param message - Error message
-   * @param details - Additional error details
-   * @returns Error response object
+   * 🔒 Creates a forbidden error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
-  forbidden: (message: string = 'Access forbidden', details?: ErrorDetails): ErrorResponse => 
+  forbidden: (message?: string, details?: ErrorDetails): ErrorResponse =>
     new ForbiddenError(message, 'FORBIDDEN', details || null).toJSON(),
   
   /**
-   * Create a validation error response
-   * @param message - Error message
-   * @param details - Additional error details
-   * @returns Error response object
+   * ⚠️ Creates a conflict error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
-  validation: (message: string = 'Validation failed', details?: ErrorDetails): ErrorResponse => 
-    new ValidationError(message, 'VALIDATION_ERROR', details || null).toJSON(),
+  conflict: (message?: string, details?: ErrorDetails): ErrorResponse =>
+    new ConflictError(message, 'CONFLICT', details || null).toJSON(),
   
   /**
-   * Create an internal server error response
-   * @param message - Error message
-   * @param details - Additional error details
-   * @returns Error response object
+   * 🔄 Creates a state transition error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
    */
-  internal: (message: string = 'Internal server error', details?: ErrorDetails): ErrorResponse => 
-    new ApiError(message, 500, 'INTERNAL_ERROR', details || null).toJSON()
+  invalidStateTransition: (message?: string, details?: ErrorDetails): ErrorResponse =>
+    new StateTransitionError(message, 'INVALID_STATE_TRANSITION', details || null).toJSON(),
+  
+  /**
+   * 🔄 Creates a content negotiation error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
+   */
+  contentNegotiationFailed: (message?: string, details?: ErrorDetails): ErrorResponse =>
+    new ContentNegotiationError(message, 'CONTENT_NEGOTIATION_FAILED', details || null).toJSON(),
+  
+  /**
+   * ⚠️ Creates an internal server error response
+   * 
+   * @param {string} [message] - Error message
+   * @param {ErrorDetails} [details] - Additional error details
+   * @returns {ErrorResponse} The formatted error response
+   */
+  internalServerError: (message?: string, details?: ErrorDetails): ErrorResponse =>
+    new ApiError(message || 'Internal server error', 500, 'INTERNAL_SERVER_ERROR', details || null).toJSON()
 };
 
 /**
- * Create an error response for an API request
- * @param error - Error instance
- * @returns HTTP response with error details
+ * 🎯 Creates a Response object from an Error
+ * 
+ * Converts an Error instance into a proper Response object with
+ * appropriate status code and headers for HATEOAS APIs.
+ * 
+ * @param {Error} error - The error to convert
+ * @returns {Response} A Response object containing the error
  */
 export function createErrorResponse(error: Error): Response {
-  if (error instanceof ApiError) {
-    return new Response(
-      JSON.stringify(error.toJSON()),
-      {
-        status: error.status,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-  }
+  const status = error instanceof ApiError ? error.status : 500;
+  const body = error instanceof ApiError ? error.toJSON() : Errors.internalServerError(error.message);
   
-  // Handle generic errors
-  const apiError = new ApiError(
-    error.message || 'Internal server error',
-    500,
-    'INTERNAL_ERROR'
-  );
-  
-  return new Response(
-    JSON.stringify(apiError.toJSON()),
-    {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      'Content-Type': 'application/json'
     }
-  );
+  });
 } 
