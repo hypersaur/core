@@ -26,7 +26,7 @@
 
 import { LinkManager, type LinkObject, type LinkOptions } from './link.ts';
 import { ResourceState, type StateTransition } from './state.ts';
-import { InvalidArgumentError } from './errors.ts';
+import { InvalidArgumentError, StateTransitionError } from './errors.ts';
 
 /**
  * 🔧 Options for creating a new Resource instance
@@ -39,11 +39,13 @@ import { InvalidArgumentError } from './errors.ts';
  * @property {string} [type] - The type of the resource (e.g., 'user', 'post')
  * @property {string} [id] - The unique identifier of the resource
  * @property {Record<string, unknown>} [properties] - The resource's properties
+ * @property {string} [initialState] - The initial state of the resource
  */
 export interface ResourceOptions {
   type?: string;
   id?: string;
   properties?: Record<string, unknown>;
+  initialState?: string;
 }
 
 /**
@@ -79,68 +81,7 @@ export class Resource {
     this.id = options.id || '';
     this.properties = options.properties || {};
     this.linkManager = new LinkManager();
-    this.stateManager = new ResourceState();
-  }
-
-  /**
-   * 🏷️ Sets the type of the resource
-   * 
-   * The resource type is crucial in HATEOAS as it helps clients understand
-   * the nature of the resource and its relationships with other resources.
-   * 
-   * @param {string} type - The resource type
-   * @throws {InvalidArgumentError} If type is not a string
-   * @returns {Resource} The resource instance for method chaining
-   */
-  setType(type: string): Resource {
-    if (typeof type !== 'string') {
-      throw new InvalidArgumentError('Resource type must be a string');
-    }
-    this.type = type;
-    return this;
-  }
-
-  /**
-   * 📋 Gets the type of the resource
-   * 
-   * Returns the resource type, which is essential for client-side processing
-   * and understanding the resource's role in the API.
-   * 
-   * @returns {string} The resource type
-   */
-  getType(): string {
-    return this.type;
-  }
-
-  /**
-   * 🔑 Sets the unique identifier of the resource
-   * 
-   * The resource ID is fundamental in HATEOAS as it enables unique identification
-   * and linking between resources. It's used in self-referential links and
-   * resource relationships.
-   * 
-   * @param {string|number} id - The resource ID
-   * @throws {InvalidArgumentError} If id is not a string or number
-   * @returns {Resource} The resource instance for method chaining
-   */
-  setId(id: string | number): Resource {
-    if (typeof id !== 'string' && typeof id !== 'number') {
-      throw new InvalidArgumentError('Resource ID must be a string or number');
-    }
-    this.id = String(id);
-    return this;
-  }
-
-  /**
-   * 🔑 Gets the unique identifier of the resource
-   * 
-   * Returns the resource's unique identifier, which is used in links and
-   * resource relationships throughout the API.
-   * 
-   * @returns {string} The resource ID
-   */
-  getId(): string {
-    return this.id;
+    this.stateManager = new ResourceState(options.initialState || 'draft');
   }
 
   /**
@@ -200,64 +141,30 @@ export class Resource {
     // Handle nested properties
     if (key.includes('.')) {
       const parts = key.split('.');
-      let current: Record<string, unknown> = this.properties;
-      
+      let current = this.properties;
+
       for (const part of parts) {
-        if (!(part in current)) {
+        if (!(part in current) || typeof current[part] !== 'object') {
           return undefined;
         }
         current = current[part] as Record<string, unknown>;
       }
-      
+
       return current;
     }
-    
+
     return this.properties[key];
-  }
-
-  /**
-   * 📦 Sets multiple properties on the resource
-   * 
-   * Allows bulk setting of properties, which is useful when initializing
-   * resources or updating multiple properties at once.
-   * 
-   * @param {Record<string, unknown>} properties - The properties to set
-   * @throws {InvalidArgumentError} If properties is not an object
-   * @returns {Resource} The resource instance for method chaining
-   */
-  setProperties(properties: Record<string, unknown>): Resource {
-    if (!properties || typeof properties !== 'object') {
-      throw new InvalidArgumentError('Properties must be an object');
-    }
-    
-    Object.entries(properties).forEach(([key, value]) => {
-      this.setProperty(key, value);
-    });
-    
-    return this;
-  }
-
-  /**
-   * 📚 Gets all properties of the resource
-   * 
-   * Returns a copy of all properties, ensuring encapsulation and preventing
-   * unintended modifications to the resource's state.
-   * 
-   * @returns {Record<string, unknown>} A copy of all properties
-   */
-  getProperties(): Record<string, unknown> {
-    return { ...this.properties };
   }
 
   /**
    * 🔗 Adds a link to the resource
    * 
-   * Links are the core of HATEOAS, representing available actions and relationships.
-   * This method adds a new link to the resource, enabling clients to discover
-   * and navigate to related resources or perform actions.
+   * Links are fundamental to HATEOAS as they enable clients to discover
+   * and navigate through the API. This method adds a link with the specified
+   * relation and URL.
    * 
-   * @param {string} rel - The link relation (e.g., 'self', 'edit')
-   * @param {string} href - The link URI
+   * @param {string} rel - The link relation
+   * @param {string} href - The link URL
    * @param {string} [method='GET'] - The HTTP method for the link
    * @param {LinkOptions} [options] - Additional link options
    * @returns {Resource} The resource instance for method chaining
@@ -270,12 +177,12 @@ export class Resource {
   /**
    * 🔗 Adds a templated link to the resource
    * 
-   * Templated links are a powerful HATEOAS feature that allows for dynamic
-   * resource discovery and querying. This method adds a link with URI template
-   * support.
+   * Templated links are useful for links that require parameters, such as
+   * search or filter operations. The template can be expanded with actual
+   * values when needed.
    * 
    * @param {string} rel - The link relation
-   * @param {string} template - The URI template
+   * @param {string} template - The link template
    * @param {string} [method='GET'] - The HTTP method for the link
    * @param {LinkOptions} [options] - Additional link options
    * @returns {Resource} The resource instance for method chaining
@@ -286,28 +193,28 @@ export class Resource {
   }
 
   /**
-   * 🔍 Gets a specific link from the resource
+   * 🔗 Gets a link by its relation
    * 
-   * Retrieves a link by its relation type, which is essential for clients
-   * to find specific actions or relationships they're interested in.
+   * Retrieves a specific link from the resource by its relation name.
+   * This is essential for clients to find specific navigation options.
    * 
    * @param {string} rel - The link relation
-   * @returns {LinkObject | undefined} The link object if found
+   * @returns {LinkObject | undefined} The link object or undefined if not found
    */
   getLink(rel: string): LinkObject | undefined {
     return this.linkManager.getLink(rel);
   }
 
   /**
-   * 🏠 Gets the self-referential link of the resource
+   * 🔗 Gets the self link of the resource
    * 
-   * The self link is a fundamental concept in HATEOAS, providing the canonical
-   * URI for the resource. It's essential for resource identification and caching.
+   * The self link is a crucial part of HATEOAS as it uniquely identifies
+   * the resource and enables clients to reference it.
    * 
-   * @returns {string | undefined} The self link URI if present
+   * @returns {string | undefined} The self link URL or undefined if not set
    */
   getSelfLink(): string | undefined {
-    const selfLink = this.getLink('self');
+    const selfLink = this.linkManager.getLink('self');
     if (!selfLink) return undefined;
     
     return Array.isArray(selfLink) 
@@ -316,35 +223,34 @@ export class Resource {
   }
 
   /**
-   * 📋 Gets all links from the resource
+   * 🔗 Gets all links from the resource
    * 
-   * Returns all available links, enabling clients to discover all possible
-   * actions and relationships associated with the resource.
+   * Returns all links associated with the resource, enabling clients to
+   * discover all available navigation options.
    * 
-   * @returns {Record<string, LinkObject>} All links indexed by relation
+   * @returns {Record<string, LinkObject>} Map of link relations to link objects
    */
   getLinks(): Record<string, LinkObject> {
     return this.linkManager.getLinks();
   }
 
   /**
-   * 🔍 Checks if a specific link exists
+   * 🔗 Checks if a link exists
    * 
-   * Allows clients to check for the availability of specific actions or
-   * relationships before attempting to use them.
+   * Verifies whether a specific link relation exists on the resource.
    * 
    * @param {string} rel - The link relation to check
-   * @returns {boolean} True if the link exists
+   * @returns {boolean} Whether the link exists
    */
   hasLink(rel: string): boolean {
     return this.linkManager.hasLink(rel);
   }
 
   /**
-   * ❌ Removes a link from the resource
+   * 🔗 Removes a link from the resource
    * 
-   * Removes a link, which can be useful when a particular action or
-   * relationship is no longer available for the resource.
+   * Removes a specific link by its relation name, which is useful when
+   * updating resource state or removing navigation options.
    * 
    * @param {string} rel - The link relation to remove
    * @returns {Resource} The resource instance for method chaining
@@ -355,37 +261,36 @@ export class Resource {
   }
 
   /**
-   * 📦 Embeds a related resource
+   * 📦 Embeds a resource or array of resources
    * 
-   * Embedded resources are a key feature of HATEOAS that allows for efficient
-   * representation of related resources without requiring additional requests.
-   * This method adds a resource or array of resources as embedded content.
+   * Embedded resources are a key feature of HATEOAS, allowing related
+   * resources to be included directly in the response.
    * 
-   * @param {string} rel - The relation type for the embedded resource
+   * @param {string} rel - The relation name for the embedded resources
    * @param {Resource | Resource[]} resource - The resource(s) to embed
    * @returns {Resource} The resource instance for method chaining
    */
   embed(rel: string, resource: Resource | Resource[]): Resource {
-    if (!this.embedded[rel]) {
-      this.embedded[rel] = [];
+    if (!rel || typeof rel !== 'string') {
+      throw new InvalidArgumentError('Relation must be a non-empty string');
     }
-    
+
     if (Array.isArray(resource)) {
-      this.embedded[rel].push(...resource);
+      this.embedded[rel] = resource;
     } else {
-      this.embedded[rel].push(resource);
+      this.embedded[rel] = [resource];
     }
-    
+
     return this;
   }
 
   /**
-   * 📚 Gets embedded resources
+   * 📦 Gets embedded resources
    * 
-   * Retrieves embedded resources, which are crucial for efficient resource
-   * representation and reducing the number of HTTP requests needed.
+   * Retrieves embedded resources by their relation name or all embedded
+   * resources if no relation is specified.
    * 
-   * @param {string} [rel] - Optional relation type to filter embedded resources
+   * @param {string} [rel] - Optional relation name to filter by
    * @returns {Record<string, Resource[]> | Resource[] | undefined} The embedded resources
    */
   getEmbedded(rel?: string): Record<string, Resource[]> | Resource[] | undefined {
@@ -396,184 +301,87 @@ export class Resource {
   }
 
   /**
-   * 🔍 Checks if embedded resources exist
+   * 📦 Checks if embedded resources exist
    * 
-   * Allows clients to check for the presence of embedded resources before
-   * attempting to access them.
+   * Verifies whether embedded resources exist for a specific relation.
    * 
-   * @param {string} rel - The relation type to check
-   * @returns {boolean} True if embedded resources exist
+   * @param {string} rel - The relation to check
+   * @returns {boolean} Whether embedded resources exist
    */
   hasEmbedded(rel: string): boolean {
-    return rel in this.embedded && this.embedded[rel].length > 0;
-  }
-
-  /**
-   * 🔄 Sets the current state of the resource
-   * 
-   * State management is crucial in HATEOAS for representing the resource's
-   * current condition and available transitions.
-   * 
-   * @param {string} state - The new state
-   * @returns {Resource} The resource instance for method chaining
-   */
-  setState(state: string): Resource {
-    this.stateManager.setState(state);
-    return this;
-  }
-
-  /**
-   * 📊 Gets the current state of the resource
-   * 
-   * Returns the resource's current state, which is essential for clients
-   * to understand what actions are available.
-   * 
-   * @returns {string} The current state
-   */
-  getState(): string {
-    return this.stateManager.getState();
+    return rel in this.embedded;
   }
 
   /**
    * 🔄 Adds a state transition
    * 
-   * State transitions are a key concept in HATEOAS, representing the possible
-   * ways a resource can change state. This method defines a new transition
-   * with its associated link and conditions.
+   * Defines a new possible state transition, including its conditions and
+   * the hypermedia controls needed to trigger it.
    * 
    * @param {string} from - The source state
    * @param {string} to - The target state
    * @param {string} name - The transition name
-   * @param {string} href - The transition URI
+   * @param {string} href - The URI for the transition
    * @param {string} [method='POST'] - The HTTP method for the transition
-   * @param {Record<string, unknown>} [conditions] - Optional conditions for the transition
+   * @param {Record<string, unknown>} [conditions] - Conditions for the transition
    */
   addTransition(from: string, to: string, name: string, href: string, method: string = 'POST', conditions?: Record<string, unknown>): void {
     this.stateManager.addTransition(from, to, name, href, method, conditions);
+    this.addLink(name, href, method);
   }
 
   /**
    * 🔄 Applies a state transition
    * 
-   * Executes a state transition, updating the resource's state and ensuring
-   * all associated links and conditions are properly handled.
+   * Changes the resource's state using the specified transition name.
+   * This is how clients can trigger state changes in the resource.
    * 
-   * @param {string} name - The transition name
+   * @param {string} name - The name of the transition to apply
+   * @throws {StateTransitionError} If the transition is not available
    * @returns {Resource} The resource instance for method chaining
    */
   applyTransition(name: string): Resource {
-    const currentState = this.getState();
-    const newState = this.stateManager.applyTransition(name, currentState, this.getProperties());
-    this.setState(newState);
+    const currentState = this.stateManager.getState();
+    const newState = this.stateManager.applyTransition(name, currentState, this.properties);
+    this.stateManager.setState(newState);
     return this;
   }
 
   /**
-   * 📋 Creates a deep copy of the resource
+   * 📚 Gets available state transitions
    * 
-   * Useful for creating independent copies of resources, which is important
-   * when dealing with resource templates or when modifications need to be
-   * isolated from the original resource.
+   * Returns all possible state transitions from the current state,
+   * taking into account any conditions that must be met.
    * 
-   * @returns {Resource} A new resource instance with the same state
+   * @returns {StateTransition[]} Available transitions
    */
-  clone(): Resource {
-    const clone = new Resource({
-      type: this.type,
-      id: this.id,
-      properties: { ...this.properties }
-    });
-
-    // Clone links
-    Object.entries(this.getLinks()).forEach(([rel, link]) => {
-      if (Array.isArray(link)) {
-        link.forEach(l => clone.addLink(rel, l.href, l.method || 'GET', {
-          templated: l.templated,
-          title: l.title,
-          type: l.type,
-          hreflang: l.hreflang,
-          attrs: l.attrs
-        }));
-      } else {
-        clone.addLink(rel, link.href, link.method || 'GET', {
-          templated: link.templated,
-          title: link.title,
-          type: link.type,
-          hreflang: link.hreflang,
-          attrs: link.attrs
-        });
-      }
-    });
-
-    // Clone embedded resources
-    Object.entries(this.embedded).forEach(([rel, resources]) => {
-      clone.embed(rel, resources.map(r => r.clone()));
-    });
-
-    // Clone state
-    clone.setState(this.getState());
-    this.stateManager.getTransitions().forEach(transition => {
-      clone.addTransition(
-        transition.from,
-        transition.to,
-        transition.name,
-        transition.href,
-        transition.method,
-        transition.conditions
-      );
-    });
-
-    return clone;
+  getAvailableTransitions(): StateTransition[] {
+    return this.stateManager.getAvailableTransitions(this.stateManager.getState(), this.properties);
   }
 
   /**
-   * 📦 Converts the resource to a JSON-compatible object
+   * 📦 Converts the resource to a JSON representation
    * 
-   * Serializes the resource into a JSON-compatible format that
-   * follows HATEOAS principles, including properties, links,
-   * and embedded resources.
-   * 
-   * @returns {Record<string, unknown>} The JSON representation
+   * @returns {Record<string, unknown>} JSON representation of the resource
    */
   toJSON(): Record<string, unknown> {
-    const json: Record<string, unknown> = {};
+    const json: Record<string, unknown> = {
+      type: this.type,
+      id: this.id,
+      properties: this.properties,
+      links: this.linkManager.getLinks(),
+      state: this.stateManager.getState()
+    };
 
-    // Add type and id if set
-    if (this.type) {
-      json.type = this.type;
-    }
-    if (this.id) {
-      json.id = this.id;
-    }
-
-    // Add properties
-    if (Object.keys(this.properties).length > 0) {
-      json.properties = this.properties;
-    }
-
-    // Add links if any exist
-    const links = this.linkManager.getLinks();
-    if (Object.keys(links).length > 0) {
-      json.links = links;
-    }
-
-    // Add embedded resources if any exist
     if (Object.keys(this.embedded).length > 0) {
-      json.embedded = this.embedded;
+      json.embedded = Object.fromEntries(
+        Object.entries(this.embedded).map(([rel, resources]) => [
+          rel,
+          resources.map(resource => resource.toJSON())
+        ])
+      );
     }
 
     return json;
-  }
-
-  /**
-   * 🔄 Gets available state transitions
-   * 
-   * Returns all possible state transitions for the resource's current state,
-   * enabling clients to understand what actions are available.
-   * 
-   * @returns {StateTransition[]} Array of available transitions
-   */
-  getAvailableTransitions(): StateTransition[] {
-    return this.stateManager.getAvailableTransitions(this.getState(), this.getProperties());
   }
 } 
