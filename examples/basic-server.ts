@@ -9,7 +9,7 @@
 // import { createApp, Resource, Collection } from "jsr:@yourusername/hyperdeno";
 
 // For local development, import from the local module
-import { createApp, createServer, Resource, Collection, type Router, type PathParams } from "../mod.ts";
+import { createApp, createServer, Resource, Collection, type PathParams } from "../mod.ts";
 import { createResponse } from "../hyperdeno/http/response.ts";
 
 interface ServerOptions {
@@ -31,7 +31,7 @@ const server = createServer({
 const app = createApp();
 
 // Set up the API root
-app.getRouter().get("/api", async (request: Request) => {
+app.getRouter().get("/api", (_request: Request) => {
   const resource = new Resource({
     type: "api",
     properties: {
@@ -50,7 +50,7 @@ app.getRouter().get("/api", async (request: Request) => {
 });
 
 // Set up a collection resource
-app.getRouter().get("/api/users", async (request: Request) => {
+app.getRouter().get("/api/users", (_request: Request) => {
   // Simulate a database
   const users = [
     { id: "1", name: "Alice", email: "alice@example.com" },
@@ -99,7 +99,7 @@ app.getRouter().get("/api/users", async (request: Request) => {
 });
 
 // Set up an individual resource
-app.getRouter().get("/api/users/:id", async (request: Request, params: PathParams) => {
+app.getRouter().get("/api/users/:id", (_request: Request, params: PathParams) => {
   const userId = params.id;
   
   // Simulate database lookup
@@ -141,7 +141,7 @@ app.getRouter().get("/api/users/:id", async (request: Request, params: PathParam
 });
 
 // Set the app's router on the server
-server.getRouter().get("*", async (request) => {
+server.getRouter().get("*", (request) => {
   return app.handle(request);
 });
 

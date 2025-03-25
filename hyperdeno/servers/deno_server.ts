@@ -26,7 +26,7 @@ export class DenoServer implements Server {
       } : {}),
     };
 
-    this.server = Deno.serve(serverOptions, this.handler);
+    this.server = await Deno.serve(serverOptions, this.handler);
     this.status = 'running';
   }
 
@@ -36,7 +36,7 @@ export class DenoServer implements Server {
     }
 
     if (this.server) {
-      this.server.shutdown();
+      await this.server.shutdown();
       this.server = null;
       this.status = 'stopped';
     }

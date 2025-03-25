@@ -7,7 +7,7 @@
 
 import { Router } from './http/router.ts';
 import { RendererFactory } from './rendering/renderer_factory.ts';
-import { type createResponse, createErrorResponse } from './http/response.ts';
+import { createErrorResponse } from './http/response.ts';
 import { ApiError } from './core/errors.ts';
 import type { Server as ServerInterface, ServerOptions as BaseServerOptions } from './servers/types.ts';
 import { DenoServer } from './servers/deno_server.ts';
@@ -26,7 +26,7 @@ export class Server {
    * @param {ServerOptions} options - Server configuration options
    */
   constructor(options: ServerOptions = {}) {
-    const { rendererFactory, ...serverOptions } = options;
+    const { rendererFactory, ..._serverOptions } = options;
     this.router = new Router();
     this.rendererFactory = rendererFactory || new RendererFactory();
     

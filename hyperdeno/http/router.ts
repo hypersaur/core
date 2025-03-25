@@ -338,7 +338,7 @@ export class Router {
       );
       
       if (!route) {
-        const error = new NotFoundError(`Route not found: ${request.method} ${request.url}`);
+        const _error = new NotFoundError(`Route not found: ${request.method} ${request.url}`);
         return this.#notFoundHandler!(request, {});
       }
       
