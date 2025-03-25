@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Memos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .memo-list {
+            list-style: none;
+            padding: 0;
+        }
+        .memo-item {
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .memo-title {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .memo-content {
+            color: #666;
+        }
+        .memo-meta {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 10px;
+        }
+        .memo-actions {
+            margin-top: 10px;
+        }
+        .memo-actions a {
+            margin-right: 10px;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .memo-actions a:hover {
+            text-decoration: underline;
+        }
+        .new-memo {
+            margin-bottom: 20px;
+        }
+        .new-memo a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .new-memo a:hover {
+            background-color: #0052a3;
+        }
+    </style>
+</head>
+<body>
+    <h1>Memos</h1>
+    <div class="new-memo">
+        <a href="/memos/new">Create New Memo</a>
+    </div>
+    <ul class="memo-list">
+        {{#each items}}
+        <li class="memo-item">
+            <div class="memo-title">{{title}}</div>
+            <div class="memo-content">{{content}}</div>
+            <div class="memo-meta">
+                Created: {{formatDate createdAt}} | Updated: {{formatDate updatedAt}}
+            </div>
+            <div class="memo-actions">
+                <a href="{{_links.self.href}}">View</a>
+                <a href="{{_links.edit.href}}">Edit</a>
+                <a href="{{_links.comments.href}}">Comments</a>
+                <a href="{{_links.delete.href}}" onclick="return confirm('Are you sure you want to delete this memo?')">Delete</a>
+            </div>
+        </li>
+        {{/each}}
+    </ul>
+</body>
+</html> 

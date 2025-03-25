@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Comments for {{memo.title}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .memo-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .memo-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .memo-content {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .comment-list {
+            list-style: none;
+            padding: 0;
+        }
+        .comment-item {
+            border: 1px solid #ddd;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .comment-content {
+            margin-bottom: 10px;
+        }
+        .comment-meta {
+            font-size: 0.9em;
+            color: #999;
+        }
+        .comment-actions {
+            margin-top: 10px;
+        }
+        .comment-actions a {
+            margin-right: 10px;
+            color: #0066cc;
+            text-decoration: none;
+        }
+        .comment-actions a:hover {
+            text-decoration: underline;
+        }
+        .new-comment {
+            margin-bottom: 20px;
+        }
+        .new-comment a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .new-comment a:hover {
+            background-color: #0052a3;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        .back-link a {
+            color: #666;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="{{_links.memo.href}}">← Back to Memo</a>
+    </div>
+    <div class="memo-header">
+        <div class="memo-title">{{memo.title}}</div>
+        <div class="memo-content">{{memo.content}}</div>
+    </div>
+    <h2>Comments</h2>
+    <div class="new-comment">
+        <a href="{{_links.self.href}}/new">Add New Comment</a>
+    </div>
+    <ul class="comment-list">
+        {{#each items}}
+        <li class="comment-item">
+            <div class="comment-content">{{content}}</div>
+            <div class="comment-meta">
+                Created: {{formatDate createdAt}} | Updated: {{formatDate updatedAt}}
+            </div>
+            <div class="comment-actions">
+                <a href="{{_links.edit.href}}">Edit</a>
+                <a href="{{_links.delete.href}}" onclick="return confirm('Are you sure you want to delete this comment?')">Delete</a>
+            </div>
+        </li>
+        {{/each}}
+    </ul>
+</body>
+</html> 

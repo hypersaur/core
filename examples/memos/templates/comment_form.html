@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{#if id}}Edit{{else}}New{{/if}} Comment</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .memo-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .memo-title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .memo-content {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            height: 150px;
+            resize: vertical;
+        }
+        .button-group {
+            margin-top: 20px;
+        }
+        .button-group button {
+            padding: 10px 20px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .button-group button:hover {
+            background-color: #0052a3;
+        }
+        .button-group a {
+            margin-left: 10px;
+            color: #666;
+            text-decoration: none;
+        }
+        .button-group a:hover {
+            text-decoration: underline;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        .back-link a {
+            color: #666;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="back-link">
+        <a href="{{_links.memo.href}}">← Back to Memo</a>
+    </div>
+    <div class="memo-header">
+        <div class="memo-title">{{memo.title}}</div>
+        <div class="memo-content">{{memo.content}}</div>
+    </div>
+    <h2>{{#if id}}Edit{{else}}New{{/if}} Comment</h2>
+    <form method="POST" action="{{_links.self.href}}">
+        <div class="form-group">
+            <label for="content">Comment:</label>
+            <textarea id="content" name="content" required>{{content}}</textarea>
+        </div>
+        <div class="button-group">
+            <button type="submit">Save</button>
+            <a href="{{_links.memo.href}}/comments">Cancel</a>
+        </div>
+    </form>
+</body>
+</html> 

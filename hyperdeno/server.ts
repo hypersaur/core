@@ -6,18 +6,18 @@
  */
 
 import { Router } from './http/router.ts';
-import { RendererFactory } from './rendering/renderer_factory.ts';
+import { JsonRenderer } from './core/json_renderer.ts';
 import { createErrorResponse } from './http/response.ts';
 import { ApiError } from './core/errors.ts';
 import type { Server as ServerInterface, ServerOptions as BaseServerOptions } from './servers/types.ts';
 import { DenoServer } from './servers/deno_server.ts';
 
 export interface ServerOptions extends BaseServerOptions {
-  rendererFactory?: RendererFactory;
+  renderer?: JsonRenderer;
 }
 
 export class Server {
-  private rendererFactory: RendererFactory;
+  private renderer: JsonRenderer;
   private router: Router;
   private server: ServerInterface;
 
@@ -26,9 +26,9 @@ export class Server {
    * @param {ServerOptions} options - Server configuration options
    */
   constructor(options: ServerOptions = {}) {
-    const { rendererFactory, ..._serverOptions } = options;
+    const { renderer, ..._serverOptions } = options;
     this.router = new Router();
-    this.rendererFactory = rendererFactory || new RendererFactory();
+    this.renderer = renderer || new JsonRenderer();
     
     // Create the appropriate server implementation
     this.server = new DenoServer(this.handle.bind(this));
@@ -69,11 +69,11 @@ export class Server {
   }
 
   /**
-   * Gets the renderer factory instance
-   * @returns {RendererFactory} The renderer factory instance
+   * Gets the JSON renderer instance
+   * @returns {JsonRenderer} The JSON renderer instance
    */
-  getRendererFactory(): RendererFactory {
-    return this.rendererFactory;
+  getRenderer(): JsonRenderer {
+    return this.renderer;
   }
 
   /**
