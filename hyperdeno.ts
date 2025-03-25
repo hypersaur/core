@@ -3074,7 +3074,6 @@ export default {
   MiddlewareChain,
   PluginManager,
   // Renderers
-  ResourceRenderer,
   RendererRegistry,
   JsonRenderer,
   HalRenderer,
