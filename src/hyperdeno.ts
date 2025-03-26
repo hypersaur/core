@@ -84,8 +84,8 @@ export class ValidationError extends ApiError {
  * Error for authentication and authorization (401)
  */
 export class AuthError extends ApiError {
-  constructor(message: string = 'Authentication failed', code: string = 'AUTH_ERROR', details: ErrorDetails | null = null) {
-    super(message, 401, code, details);
+  constructor(message: string = 'Authentication failed', code: string = 'AUTH_ERROR', details: ErrorDetails | null = null, status: number = 401) {
+    super(message, status, code, details);
   }
 }
 
@@ -93,8 +93,8 @@ export class AuthError extends ApiError {
  * Error for server and internal issues (500)
  */
 export class ServerError extends ApiError {
-  constructor(message: string = 'Internal server error', code: string = 'SERVER_ERROR', details: ErrorDetails | null = null) {
-    super(message, 500, code, details);
+  constructor(message: string = 'Internal server error', code: string = 'INTERNAL_SERVER_ERROR', details: ErrorDetails | null = null, status: number = 500) {
+    super(message, status, code, details);
   }
 }
 
@@ -132,7 +132,7 @@ export function createErrorResponse(error: Error): Response {
   const status = error instanceof ApiError ? error.status : 500;
   const body = error instanceof ApiError 
     ? error.toJSON() 
-    : new ServerError(error.message).toJSON();
+    : new ServerError(error.message, 'INTERNAL_ERROR').toJSON();
   
   return new Response(JSON.stringify(body), {
     status,
@@ -147,22 +147,22 @@ export function createErrorResponse(error: Error): Response {
  */
 export const Errors = {
   notFound: (message?: string, details?: ErrorDetails): ErrorResponse => 
-    new NotFoundError(message, 'RESOURCE_NOT_FOUND', details || null).toJSON(),
+    new NotFoundError(message || 'Resource not found', 'RESOURCE_NOT_FOUND', details || null).toJSON(),
   
   badRequest: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ValidationError(message, 'BAD_REQUEST', details || null).toJSON(),
+    new ValidationError(message || 'Bad request', 'BAD_REQUEST', details || null).toJSON(),
   
   unauthorized: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new AuthError(message, 'UNAUTHORIZED', details || null).toJSON(),
+    new AuthError(message || 'Unauthorized', 'UNAUTHORIZED', details || null, 401).toJSON(),
   
   forbidden: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new AuthError(message, 'FORBIDDEN', details || null).toJSON(),
+    new AuthError(message || 'Forbidden', 'FORBIDDEN', details || null, 403).toJSON(),
   
   conflict: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ServerError(message, 'CONFLICT', details || null).toJSON(),
+    new ServerError(message || 'Resource conflict', 'CONFLICT', details || null, 409).toJSON(),
   
   internalServerError: (message?: string, details?: ErrorDetails): ErrorResponse =>
-    new ServerError(message || 'Internal server error', 'INTERNAL_SERVER_ERROR', details || null).toJSON()
+    new ServerError(message || 'Internal server error', 'INTERNAL_SERVER_ERROR', details || null, 500).toJSON()
 };
 
 //#endregion
@@ -776,8 +776,8 @@ export class Resource {
   }
 
   setProperty(key: string, value: unknown): Resource {
-    if (!key || typeof key !== 'string') {
-      throw new InvalidArgumentError('Property key must be a string');
+    if (!key || typeof key !== 'string' || key.trim() === '') {
+      throw new InvalidArgumentError('Property key must be a non-empty string');
     }
 
     // Handle nested properties
@@ -1028,43 +1028,43 @@ export class Collection {
     if (options.items && Array.isArray(options.items)) {
       this.addItems(options.items);
     }
-
+    
     if (options.pagination) {
       this.setPagination(options.pagination);
     }
   }
-
+  
   getType(): string {
     return this.resource.getType();
   }
-
+  
   setType(type: string): Collection {
     this.resource.setType(type);
     return this;
   }
-
+  
   getId(): string {
     return this.resource.getId();
   }
-
+  
   setId(id: string): Collection {
     this.resource.setId(id);
     return this;
   }
-
+  
   setProperty(key: string, value: unknown): Collection {
     this.resource.setProperty(key, value);
     return this;
   }
-
+  
   getProperty(key: string): unknown {
     return this.resource.getProperty(key);
   }
-
+  
   getProperties(): Record<string, unknown> {
     return this.resource.getProperties();
   }
-
+  
   addItem(item: Resource): Collection {
     if (!(item instanceof Resource)) {
       throw new InvalidArgumentError('Collection items must be Resource instances');
@@ -1072,7 +1072,7 @@ export class Collection {
     this.items.push(item);
     return this;
   }
-
+  
   addItems(items: Resource[]): Collection {
     if (!Array.isArray(items)) {
       throw new InvalidArgumentError('Items must be an array');
@@ -1087,73 +1087,70 @@ export class Collection {
     
     return this;
   }
-
+  
   getItems(): Resource[] {
     return [...this.items];
   }
-
+  
   getCount(): number {
     return this.items.length;
   }
-
+  
   sort(compareFn: (a: Resource, b: Resource) => number): Collection {
     this.items.sort(compareFn);
     return this;
   }
-
+  
   filter(predicate: (item: Resource) => boolean): Resource[] {
     return this.items.filter(predicate);
   }
-
-  setPagination(pagination: PaginationInfo): Collection {
-    this.pagination = pagination;
+  
+  setPagination(pagination: PaginationInfo | null): Collection {
+    this.pagination = pagination ? { ...pagination } : null;
     return this;
   }
-
+  
   getPagination(): PaginationInfo | null {
-    return this.pagination;
+    return this.pagination ? { ...this.pagination } : null;
   }
-
-  setPage(page: number): Collection {
+  
+  setPage(page: number): void {
     if (!this.pagination) {
-      this.pagination = { page, pageSize: 10, total: this.items.length };
+      this.pagination = { page, pageSize: 10, total: 0 };
     } else {
       this.pagination.page = page;
     }
-    return this;
   }
-
-  setPageSize(pageSize: number): Collection {
+  
+  setPageSize(pageSize: number): void {
     if (!this.pagination) {
-      this.pagination = { page: 1, pageSize, total: this.items.length };
+      this.pagination = { page: 1, pageSize, total: 0 };
     } else {
       this.pagination.pageSize = pageSize;
     }
-    return this;
   }
-
-  setTotal(total: number): Collection {
+  
+  setTotal(total: number): void {
     if (!this.pagination) {
       this.pagination = { page: 1, pageSize: 10, total };
     } else {
       this.pagination.total = total;
     }
-    return this;
   }
-
+  
   addLink(rel: string, href: string, method: string = 'GET', options: LinkOptions = {}): Collection {
     this.resource.addLink(rel, href, method, options);
     return this;
   }
-
+  
   getLink(rel: string): LinkObject | undefined {
     return this.resource.getLink(rel);
   }
-
+  
   getLinks(): Record<string, LinkObject> {
     return this.resource.getLinks();
   }
-
+  
   addPaginationLinks(baseUrl: string): Collection {
     if (!this.pagination) return this;
 
@@ -1181,16 +1178,16 @@ export class Collection {
     
     return this;
   }
-
+  
   setCollectionName(name: string): Collection {
     this.collectionName = name;
     return this;
   }
-
+  
   getCollectionName(): string {
     return this.collectionName;
   }
-
+  
   toJSON(): Record<string, unknown> {
     const json = this.resource.toJSON();
     
@@ -1454,69 +1451,124 @@ export class TextRenderer implements ResourceRenderer {
   mediaType = MEDIA_TYPES.TEXT;
   
   canRender(_resource: Resource | Collection): boolean {
-    return true; // Can render any resource or collection as text
+    return true;
   }
   
   render(resource: Resource | Collection, options: ResponseOptions = {}): Response {
-    const json = resource.toJSON();
-    const text = this.formatAsText(json);
-    
-    const headers = {
-      'Content-Type': 'text/plain',
-      ...options.headers
-    };
-    
+    const text = this.resourceToText(resource);
     return new Response(text, {
-      status: options.status || 200,
-      headers
+      ...options,
+      headers: {
+        'Content-Type': MEDIA_TYPES.TEXT,
+        ...options.headers
+      }
     });
   }
   
-  private formatAsText(json: any, level: number = 0): string {
-    const indent = '  '.repeat(level);
-    let result = '';
-    
-    if (json.type) {
-      result += `${indent}Type: ${json.type}\n`;
+  private resourceToText(resource: Resource | Collection): string {
+    if (resource instanceof Collection) {
+      const items = resource.getItems();
+      let text = `Collection: ${resource.getType()}\n`;
+      text += `Total Items: ${items.length}\n\n`;
+      
+      if (items.length > 0) {
+        text += 'Items:\n';
+        items.forEach((item, index) => {
+          text += `${index + 1}. ${item.getType()} (${item.getId()})\n`;
+        });
+      }
+      
+      return text;
     }
     
-    if (json.id) {
-      result += `${indent}ID: ${json.id}\n`;
+    // Resource formatting
+    let text = '';
+    text += `Type: ${resource.getType()}\n`;
+    const id = resource.getId();
+    if (id) {
+      text += `ID: ${id}\n`;
     }
     
-    if (json.properties) {
-      result += `${indent}Properties:\n`;
-      for (const [key, value] of Object.entries(json.properties)) {
-        result += `${indent}  ${key}: ${JSON.stringify(value)}\n`;
+    const properties = resource.getProperties();
+    if (Object.keys(properties).length > 0) {
+      text += '\nProperties:\n';
+      for (const [key, value] of Object.entries(properties)) {
+        text += `  ${key.charAt(0).toUpperCase() + key.slice(1)}: ${JSON.stringify(value)}\n`;
       }
     }
     
-    if (json.links) {
-      result += `${indent}Links:\n`;
-      for (const [rel, link] of Object.entries(json.links)) {
+    const links = resource.getLinks();
+    if (Object.keys(links).length > 0) {
+      text += '\nLinks:\n';
+      for (const [rel, link] of Object.entries(links)) {
+        if (Array.isArray(link)) {
+          link.forEach(l => {
+            text += `  ${rel}: ${l.href}\n`;
+          });
+        } else {
+          text += `  ${rel}: ${link.href}\n`;
+        }
+      }
+    }
+    
+    return text;
+  }
+}
+
+/**
+ * Custom XML renderer implementation
+ */
+export class CustomXmlRenderer implements ResourceRenderer {
+  mediaType = MEDIA_TYPES.XML;
+  
+  canRender(_resource: Resource | Collection): boolean {
+    return true;
+  }
+  
+  render(resource: Resource | Collection, options: ResponseOptions = {}): Response {
+    const xml = this.resourceToXml(resource);
+    return new Response(xml, {
+      ...options,
+      headers: {
+        'Content-Type': MEDIA_TYPES.XML,
+        ...options.headers
+      }
+    });
+  }
+  
+  private resourceToXml(resource: Resource | Collection): string {
+    if (resource instanceof Collection) {
+      return `<collection type="${resource.getType()}" count="${resource.getCount()}"/>`;
+    }
+    
+    const properties = resource.getProperties();
+    let xml = `<resource type="${resource.getType()}" id="${resource.getId()}">\n`;
+    
+    // Add properties
+    xml += "  <properties>\n";
+    for (const [key, value] of Object.entries(properties)) {
+      xml += `    <${key}>${value}</${key}>\n`;
+    }
+    xml += "  </properties>\n";
+    
+    // Add links
+    const links = resource.getLinks();
+    if (Object.keys(links).length > 0) {
+      xml += "  <links>\n";
+      for (const [rel, link] of Object.entries(links)) {
         if (Array.isArray(link)) {
           for (const l of link) {
-            result += `${indent}  ${rel}: ${l.href} (${l.method || 'GET'})\n`;
+            xml += `    <link rel="${rel}" href="${l.href}" />\n`;
           }
         } else {
-          result += `${indent}  ${rel}: ${(link as any).href} (${(link as any).method || 'GET'})\n`;
+          xml += `    <link rel="${rel}" href="${link.href}" />\n`;
         }
       }
+      xml += '  </links>\n';
     }
     
-    if (json.embedded) {
-      result += `${indent}Embedded Resources:\n`;
-      for (const [rel, resources] of Object.entries(json.embedded)) {
-        result += `${indent}  ${rel}:\n`;
-        if (Array.isArray(resources)) {
-          for (const resource of resources) {
-            result += this.formatAsText(resource, level + 2);
-          }
-        }
-      }
-    }
-    
-    return result;
+    xml += '</resource>';
+    return xml;
   }
 }
 
@@ -1533,6 +1585,7 @@ export class RendererRegistry {
     this.register(this.defaultRenderer);
     this.register(new HalRenderer());
     this.register(new TextRenderer());
+    this.register(new CustomXmlRenderer());
   }
   
   /**
@@ -2591,7 +2644,7 @@ export function getMediaTypeFromFormat(format: string): MediaType | null {
  * Negotiate content type based on Accept header and format parameter
  */
 export function negotiateContentType(request: Request, available: MediaType[]): MediaType {
-  // Check for format query parameter
+  // Check for format query parameter first
   const url = new URL(request.url);
   const formatParam = url.searchParams.get('format');
   
@@ -2610,22 +2663,41 @@ export function negotiateContentType(request: Request, available: MediaType[]): 
     }
   }
   
-  // Check Accept header
+  // Parse Accept header
   const acceptHeader = request.headers.get('Accept') || '*/*';
-  const mediaType = getBestMatch(acceptHeader, available);
+  const preferences = parseAcceptHeader(acceptHeader);
   
-  if (mediaType) {
-    return mediaType;
+  // First try exact matches
+  for (const pref of preferences) {
+    if (available.includes(pref.type as MediaType)) {
+      return pref.type as MediaType;
+    }
   }
   
-  // No acceptable media type
+  // Then try wildcard matches
+  for (const pref of preferences) {
+    if (pref.type === '*/*') {
+      return available[0];
+    }
+    
+    if (pref.type.endsWith('/*')) {
+      const prefix = pref.type.slice(0, -2);
+      // For text/*, prefer text/plain if available
+      if (prefix === 'text' && available.includes(MEDIA_TYPES.TEXT)) {
+        return MEDIA_TYPES.TEXT;
+      }
+      const match = available.find(type => type.startsWith(prefix + '/'));
+      if (match) {
+        return match;
+      }
+    }
+  }
+  
+  // No acceptable media type found
   throw new ContentNegotiationError(
     'None of the available media types are acceptable',
     'NOT_ACCEPTABLE',
-    { 
-      requested: acceptHeader, 
-      available 
-    }
+    { requested: acceptHeader, available }
   );
 }
 
@@ -3078,6 +3150,7 @@ export default {
   JsonRenderer,
   HalRenderer,
   TextRenderer,
+  CustomXmlRenderer,
   // Events
   EventEmitter,
   // Configuration
