@@ -823,7 +823,6 @@ import {
       const links = collection.getLinks();
       assertExists(links.first);
       assertExists(links.prev);
-      assertExists(links.next);
       assertExists(links.last);
       
       // Verify link URLs
@@ -833,9 +832,8 @@ import {
       if (!Array.isArray(links.prev)) {
         assertEquals(links.prev.href, "/api/articles?page=2&pageSize=20");
       }
-      if (!Array.isArray(links.next)) {
-        assertEquals(links.next.href, "/api/articles?page=4&pageSize=20");
-      }
+      // No next link should exist since we're on the last page
+      assertEquals(links.next, undefined);
       if (!Array.isArray(links.last)) {
         // Total pages = 50/20 = 3 (rounded up)
         assertEquals(links.last.href, "/api/articles?page=3&pageSize=20");
