@@ -8,11 +8,7 @@
     "node": "compatible"
   },
   "exports": {
-    ".": "./mod.ts",
-    "./core": "./hyperdeno/core/mod.ts",
-    "./http": "./hyperdeno/http/mod.ts",
-    "./rendering": "./hyperdeno/rendering/mod.ts",
-    "./util": "./hyperdeno/util/mod.ts"
+    "./core": "./src/hyperdeno.ts",
   },
   "tasks": {
     "dev": "deno run --watch examples/basic-server.ts",
