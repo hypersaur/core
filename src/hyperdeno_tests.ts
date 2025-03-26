@@ -2054,54 +2054,57 @@ import {
     
     await t.step("testCustomRenderers - Test custom renderers", async () => {
       // Create a custom renderer
-      class CustomXmlRenderer {
-        mediaType = "application/xml";
+      class CustomXmlRenderer implements ResourceRenderer {
+        mediaType = MEDIA_TYPES.XML;
         
         canRender(_resource: Resource | Collection): boolean {
           return true;
         }
         
-        render(resource: Resource | Collection): Response {
+        render(resource: Resource | Collection, options: ResponseOptions = {}): Response {
           const xml = this.resourceToXml(resource);
           return new Response(xml, {
-            headers: { "Content-Type": "application/xml" }
+            ...options,
+            headers: {
+              'Content-Type': MEDIA_TYPES.XML,
+              ...options.headers
+            }
           });
         }
         
         private resourceToXml(resource: Resource | Collection): string {
-          if (resource instanceof Resource) {
-            const properties = resource.getProperties();
-            let xml = `<resource type="${resource.getType()}" id="${resource.getId()}">\n`;
-            
-            // Add properties
-            xml += "  <properties>\n";
-            for (const [key, value] of Object.entries(properties)) {
-              xml += `    <${key}>${value}</${key}>\n`;
-            }
-            xml += "  </properties>\n";
-            
-            // Add links
-            const links = resource.getLinks();
-            if (Object.keys(links).length > 0) {
-              xml += "  <links>\n";
-              for (const [rel, link] of Object.entries(links)) {
-                if (Array.isArray(link)) {
-                  for (const l of link) {
-                    xml += `    <link rel="${rel}" href="${l.href}" />\n`;
-                  }
-                } else {
-                  xml += `    <link rel="${rel}" href="${link.href}" />\n`;
-                }
-              }
-              xml += "  </links>\n";
-            }
-            
-            xml += "</resource>";
-            return xml;
+          if (resource instanceof Collection) {
+            return `<collection type="${resource.getType()}" count="${resource.getCount()}"/>`;
           }
           
-          // Simple collection support
-          return `<collection type="${resource.getType()}" count="${resource.getCount()}"/>`;
+          const properties = resource.getProperties();
+          let xml = `<resource type="${resource.getType()}" id="${resource.getId()}">\n`;
+          
+          // Add properties
+          xml += "  <properties>\n";
+          for (const [key, value] of Object.entries(properties)) {
+            xml += `    <${key}>${value}</${key}>\n`;
+          }
+          xml += "  </properties>\n";
+          
+          // Add links
+          const links = resource.getLinks();
+          if (Object.keys(links).length > 0) {
+            xml += "  <links>\n";
+            for (const [rel, link] of Object.entries(links)) {
+              if (Array.isArray(link)) {
+                for (const l of link) {
+                  xml += `    <link rel="${rel}" href="${l.href}" />\n`;
+                }
+              } else {
+                xml += `    <link rel="${rel}" href="${link.href}" />\n`;
+              }
+            }
+            xml += "  </links>\n";
+          }
+          
+          xml += "</resource>";
+          return xml;
         }
       }
       

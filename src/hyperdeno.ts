@@ -1627,6 +1627,13 @@ export class RendererRegistry {
    */
   render(resource: Resource | Collection, request: Request, options: ResponseOptions = {}): Response {
     try {
+      // Check if there's an Accept header
+      const acceptHeader = request.headers.get('Accept');
+      if (!acceptHeader) {
+        // No Accept header - use default renderer
+        return this.defaultRenderer.render(resource, options);
+      }
+
       // Get available media types
       const availableMediaTypes = this.renderers.map(r => r.mediaType);
       
